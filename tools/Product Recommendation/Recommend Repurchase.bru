@@ -1,0 +1,25 @@
+meta {
+  name: Recommend Repurchase
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{server}}/recommend/repurchase
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "user_id": 4,
+    "n_items": 10,
+    "filter_already_liked": true,
+    "items_to_exclude": []
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

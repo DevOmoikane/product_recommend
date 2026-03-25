@@ -1,0 +1,20 @@
+meta {
+  name: Load Model
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{server}}/models/load?model_path=models/model.pkl
+  body: none
+  auth: inherit
+}
+
+params:query {
+  model_path: models/model.pkl
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

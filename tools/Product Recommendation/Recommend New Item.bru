@@ -1,0 +1,25 @@
+meta {
+  name: Recommend New Item
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{server}}/recommend/new-item
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "user_id": 4,
+    "n_items": 10,
+    "filter_already_liked": false,
+    "items_to_exclude": null
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

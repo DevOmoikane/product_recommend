@@ -1,0 +1,23 @@
+meta {
+  name: Similar Items
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{server}}/items/similar
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "item_id": 792,
+    "n_items": 10
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

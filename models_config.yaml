@@ -1,0 +1,80 @@
+models:
+  defaults:
+    prediction:
+      model: "als"
+    regression:
+      model: ""
+      data_percentages:
+        train: 0.7
+        validation: 0.15
+        test: 0.15
+  weighted:
+    k1: 100
+    b: 0.8
+  persistence:
+    path: "./models"
+  prediction:
+    als:
+      friendly_name: "Alternating Least Squares"
+      enabled: true
+      class: "implicit.als.AlternatingLeastSquares"
+      parameters:
+        factors: 50
+        regularization: 0.01
+        iterations: 20
+    bpr:
+      friendly_name: "Bayesian Personalized Ranking"
+      enabled: true
+      class: "implicit.bpr.BayesianPersonalizedRanking"
+      parameters:
+        factors: 50
+        learning_rate: 0.01
+        iterations: 100
+    lmf:
+      friendly_name: "Logistic Matrix Factorization"
+      enabled: true
+      class: "implicit.lmf.LogisticMatrixFactorization"
+      parameters:
+        factors: 30
+        learning_rate: 1.0
+        regularization: 0.6
+        iterations: 30
+        neg_prop: 30
+    cosine:
+      friendly_name: "Cosine Similarity"
+      enabled: true
+      class: "implicit.nearest_neighbours.CosineSimilarity"
+      parameters:
+        K: 20
+    tfidf:
+      friendly_name: "TF-IDF"
+      enabled: true
+      class: "implicit.nearest_neighbours.TFIDFRecommender"
+      parameters:
+        K: 20
+    bm25:
+      friendly_name: "BM25"
+      enabled: true
+      class: "implicit.nearest_neighbours.BM25Recommender"
+      parameters:
+        K: 20
+        K1: 100
+        B: 0.5
+    iir:
+      friendly_name: "Item-based Collaborative Filtering"
+      enabled: false
+      class: "implicit.nearest_neighbours.ItemItemRecommender"
+      parameters:
+        K: 20
+  regression:
+    gbr:
+      n_estimators: 100
+      learning_rate: 0.1
+      max_depth: 5
+      random_state: 42
+    rf:
+      n_estimators: 100
+      max_depth: 10
+      min_samples_split: 5
+      random_state: 42
+      n_jobs: -1

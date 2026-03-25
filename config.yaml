@@ -1,0 +1,58 @@
+database:
+  uri: "postgresql://postgres:arkus123@172.17.0.1:5432/testdata"
+
+csv:
+  interactions_path: "./data/interactions.csv"
+  items_path: "./data/products.csv"
+  users_path: "./data/clients.csv"
+
+column_mapping:
+  user_id: "client_id"
+  item_id: "product_id"
+  rating: "quantity"
+
+queries:
+  interactions: "SELECT doi.quantity, doi.unit_price, c.id as client_id, p.id as product_id, p.minimal_price FROM delivery_orders as dlvo JOIN delivery_order_items as doi on doi.delivery_order_id = dlvo.id JOIN clients as c on c.id = dlvo.client_id RIGHT JOIN products as p on p.id = doi.product_id"
+  items: "SELECT id, name, minimal_price FROM products"
+  users: "SELECT id, name FROM clients"
+  products: "SELECT p.id as ProductId, p.name as name, COALESCE(min(doi.quantity), 0) as Minimum, COALESCE(max(doi.quantity), 0) as Maximum, COALESCE(sum(doi.quantity), 0) as quantity FROM products p LEFT JOIN delivery_order_items doi ON p.id = doi.product_id LEFT JOIN delivery_orders dlvo ON dlvo.id = doi.delivery_order_id LEFT JOIN clients c ON c.id = dlvo.client_id GROUP BY p.id, p.name ORDER BY p.id;"
+
+models:
+  default: "als"
+  weighted:
+    k1: 100
+    b: 0.8
+  als:
+    factors: 50
+    regularization: 0.01
+    iterations: 20
+  bpr:
+    factors: 50
+    learning_rate: 0.01
+    iterations: 100
+  lmf:
+    factors: 30
+    learning_rate: 1.0
+    regularization: 0.6
+    iterations: 30
+    neg_prop: 30
+  cosine:
+    K: 20
+  tfidf:
+    K: 20
+  bm25:
+    K: 20
+    K1: 100
+    B: 0.5
+  iir:
+    K: 20
+
+recommendations:
+  default_n_items: 10
+  filter_items: []
+
+persistence:
+  models_dir: "./models"
+  data_dir: "./data"
+  default_model: "./models/model.pkl"
+  repurchase_model: "./models/model_repurchase.pkl"

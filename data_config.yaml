@@ -1,0 +1,30 @@
+data_source:
+  type: "postgres"
+  data:
+    uri: "postgresql://postgres:arkus123@172.17.0.1:5432/testdata"
+
+cases:
+  - name: "repurchase"
+    type: "regression"
+    data:
+      default_model: "als"
+      items_query: "SELECT id, name, minimal_price FROM products"
+      users_query: "SELECT id, name FROM clients"
+      interaction_query: "SELECT doi.quantity, doi.unit_price, c.id as client_id, p.id as product_id, p.minimal_price FROM delivery_orders as dlvo JOIN delivery_order_items as doi on doi.delivery_order_id = dlvo.id JOIN clients as c on c.id = dlvo.client_id RIGHT JOIN products as p on p.id = doi.product_id"
+      data_columns:
+        - "unit_price"
+        - "client_id"
+        - "product_id"
+        - "minimal_price"
+      value_column: "quantity"
+
+  - name: "new products"
+    type: "prediction"
+    data:
+      default_model: "als"
+      items_query: "SELECT id, name, minimal_price FROM products"
+      users_query: "SELECT id, name FROM clients"
+      interaction_query: "SELECT doi.quantity, doi.unit_price, c.id as client_id, p.id as product_id, p.minimal_price FROM delivery_orders as dlvo JOIN delivery_order_items as doi on doi.delivery_order_id = dlvo.id JOIN clients as c on c.id = dlvo.client_id RIGHT JOIN products as p on p.id = doi.product_id"
+      user_id: "client_id"
+      item_id: "product_id"
+      rating: "quantity"

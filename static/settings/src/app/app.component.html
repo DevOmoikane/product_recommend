@@ -1,0 +1,37 @@
+<div class="settings-container">
+  <header class="settings-header">
+    <div class="header-left">
+      <a href="/" class="back-btn">← Back</a>
+      <h1>Settings</h1>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="saving">
+        {{ saving ? 'Saving...' : 'Save Changes' }}
+      </button>
+      <button mat-raised-button color="accent" (click)="reloadServer()" [disabled]="reloading">
+        {{ reloading ? 'Reloading...' : 'Reload Server' }}
+      </button>
+    </div>
+  </header>
+
+  <mat-tab-group class="settings-tabs" [(selectedIndex)]="selectedTabIndex">
+    <mat-tab label="Text Editor">
+      <div class="tab-content">
+        <div class="editor-container">
+          <textarea 
+            class="config-editor" 
+            [(ngModel)]="configContent"
+            spellcheck="false"
+            placeholder="Loading config.yaml...">
+          </textarea>
+        </div>
+      </div>
+    </mat-tab>
+    
+    <mat-tab label="Node Editor">
+      <div class="tab-content node-editor-content">
+        <ng-diagram [model]="diagramModel" />
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

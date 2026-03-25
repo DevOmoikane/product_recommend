@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Product Recommendation",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

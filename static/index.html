@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Recommendation System</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #475569;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #312e81;
+            --success: #22c55e;
+            --success-bg: #166534;
+            --error: #ef4444;
+            --error-bg: #7f1d1d;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: white;
+            --bg-tertiary: #f9fafb;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4b5563;
+            --border-color: #e1e5eb;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #dbeafe;
+            --success: #22c55e;
+            --success-bg: #dcfce7;
+            --error: #dc2626;
+            --error-bg: #fef2f2;
+            --shadow: rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: var(--bg-secondary);
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border-color);
+            transform: scale(1.05);
+        }
+        
+        .header h1 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+        }
+        
+        .action-select {
+            padding: 10px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            min-width: 200px;
+        }
+        
+        .action-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .search-box {
+            background: var(--bg-secondary);
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+            margin-bottom: 20px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        .search-box label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+        
+        .btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .client-info {
+            background: var(--bg-secondary);
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+            margin-bottom: 20px;
+            display: none;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        .client-info.visible {
+            display: block;
+        }
+        
+        .client-info h2 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .client-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .detail-value {
+            font-size: 16px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .table-container {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+            overflow: hidden;
+            display: none;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        .table-container.visible {
+            display: block;
+        }
+        
+        .table-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-header h3 {
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 20px;
+            text-align: left;
+        }
+        
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        tr:hover td {
+            background: var(--bg-tertiary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .error {
+            background: var(--error-bg);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .error.visible {
+            display: block;
+        }
+        
+        .result-view {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow);
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        .result-view.visible {
+            display: block;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .result-header h2 {
+            color: var(--text-primary);
+        }
+        
+        .result-content {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .result-item {
+            padding: 12px 15px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .result-item-id {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-item-name {
+            color: var(--text-secondary);
+            margin-left: 20px;
+            flex: 1;
+        }
+        
+        .result-item-score {
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-modal.visible {
+            display: flex;
+        }
+
+        .settings-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-header h2 {
+            color: var(--text-primary);
+        }
+
+        .close-settings {
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+
+        .close-settings:hover {
+            background: var(--border-color);
+        }
+
+        .config-editor {
+            flex: 1;
+            min-height: 400px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .config-editor:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .btn-save {
+            background: var(--success);
+        }
+
+        .btn-save:hover {
+            background: #16a34a;
+        }
+
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border-color);
+        }
+
+        .btn-update {
+            background: var(--accent);
+        }
+
+        .btn-update:hover {
+            background: var(--accent-hover);
+        }
+
+        .settings-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .settings-status.visible {
+            display: block;
+        }
+
+        .settings-status.success {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .settings-status.error {
+            background: var(--error-bg);
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Product Recommendation System</h1>
+                <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
+                <button id="settingsBtn" class="theme-toggle" title="Settings">⚙️</button>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <select id="modelSelect" class="action-select">
+                    <option value="">Loading models...</option>
+                </select>
+                <select id="actionSelect" class="action-select">
+                    <option value="">Select Action...</option>
+                    <option value="train">Train Model</option>
+                    <option value="recommend-new-item">Recommend New Item</option>
+                    <option value="recommend-repurchase">Recommend Repurchase</option>
+                </select>
+                <label style="display: flex; align-items: center; gap: 5px; color: var(--text-secondary); font-size: 14px;">
+                    <input type="checkbox" id="useWeighted">
+                    Weighted
+                </label>
+                <button id="processActionBtn" class="btn">Run</button>
+            </div>
+        </div>
+        
+        <div class="search-box">
+            <label for="clientInput">Enter Client Number</label>
+            <div class="search-input-group">
+                <input type="number" id="clientInput" class="search-input" placeholder="Enter client ID...">
+                <button id="loadBtn" class="btn">Load Client Data</button>
+            </div>
+        </div>
+        
+        <div id="error" class="error"></div>
+        
+        <div id="resultView" class="result-view">
+            <div class="result-header">
+                <h2 id="resultTitle">Result</h2>
+                <button id="closeResult" class="btn btn-secondary">Close</button>
+            </div>
+            <div id="resultContent" class="result-content"></div>
+        </div>
+
+        <div id="clientInfo" class="client-info">
+            <h2>Client Information</h2>
+            <div class="client-details">
+                <div class="detail-item">
+                    <div class="detail-label">Client ID</div>
+                    <div class="detail-value" id="clientId">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Client Name</div>
+                    <div class="detail-value" id="clientName">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Interactions</div>
+                    <div class="detail-value" id="totalInteractions">-</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Total Orders</div>
+                    <div class="detail-value" id="totalOrders">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="interactionsTable" class="table-container">
+            <div class="table-header">
+                <h3>Purchase History</h3>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Product ID</th>
+                            <th>Product Name</th>
+                            <th>SKU</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="interactionsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>Settings - config.yaml</h2>
+                <button id="closeSettings" class="close-settings">×</button>
+            </div>
+            <textarea id="configEditor" class="config-editor" spellcheck="false"></textarea>
+            <div id="settingsStatus" class="settings-status"></div>
+            <div class="settings-actions">
+                <button id="cancelConfig" class="btn btn-cancel">Cancel (Reload Original)</button>
+                <button id="updateConfig" class="btn btn-update">Update (Reload Changes)</button>
+                <button id="saveConfig" class="btn btn-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        
+        let currentClientId = null;
+        
+        const themeToggle = document.getElementById('themeToggle');
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        const clientInput = document.getElementById('clientInput');
+        const loadBtn = document.getElementById('loadBtn');
+        const modelSelect = document.getElementById('modelSelect');
+        const actionSelect = document.getElementById('actionSelect');
+        const processActionBtn = document.getElementById('processActionBtn');
+        const errorDiv = document.getElementById('error');
+        const clientInfo = document.getElementById('clientInfo');
+        const interactionsTable = document.getElementById('interactionsTable');
+        const resultView = document.getElementById('resultView');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultContent = document.getElementById('resultContent');
+        const closeResult = document.getElementById('closeResult');
+        const useWeighted = document.getElementById('useWeighted');
+
+        async function loadModels() {
+            try {
+                const response = await fetch(`${API_BASE}/models/list`);
+                const data = await response.json();
+                
+                modelSelect.innerHTML = '<option value="">Select Model...</option>';
+                
+                if (data.available_models && data.available_models.length > 0) {
+                    data.available_models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        modelSelect.appendChild(option);
+                    });
+                } else {
+                    const defaultModels = ['als', 'bpr', 'cosine', 'tfidf', 'bm25'];
+                    defaultModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        modelSelect.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                modelSelect.innerHTML = '<option value="">Failed to load models</option>';
+            }
+        }
+
+        loadModels();
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('visible');
+        }
+        
+        function hideError() {
+            errorDiv.classList.remove('visible');
+        }
+        
+        function showLoading(element) {
+            element.innerHTML = '<div class="loading">Loading...</div>';
+        }
+        
+        async function loadClientData() {
+            hideError();
+            const clientId = parseInt(clientInput.value);
+            
+            if (!clientId) {
+                showError('Please enter a valid client number');
+                return;
+            }
+            
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/client/${clientId}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to load client data');
+                }
+                
+                const data = await response.json();
+                currentClientId = clientId;
+                
+                if (!data.client) {
+                    showError('Client not found');
+                    clientInfo.classList.remove('visible');
+                    interactionsTable.classList.remove('visible');
+                    return;
+                }
+                
+                document.getElementById('clientId').textContent = data.client.id || '-';
+                document.getElementById('clientName').textContent = data.client.name || '-';
+                document.getElementById('totalInteractions').textContent = data.total_interactions || 0;
+                document.getElementById('totalOrders').textContent = data.total_orders || 0;
+                
+                clientInfo.classList.add('visible');
+                
+                const tbody = document.getElementById('interactionsBody');
+                tbody.innerHTML = '';
+                
+                if (data.interactions && data.interactions.length > 0) {
+                    data.interactions.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.order_id || '-'}</td>
+                            <td>${item.order_date ? new Date(item.order_date).toLocaleDateString() : '-'}</td>
+                            <td>${item.product_id || '-'}</td>
+                            <td>${item.product_name || '-'}</td>
+                            <td>${item.sku || '-'}</td>
+                            <td>${item.quantity || 0}</td>
+                            <td>$${(item.unit_price || 0)}</td>
+                            <td>$${(item.total || 0)}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    interactionsTable.classList.add('visible');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No interactions found</td></tr>';
+                    interactionsTable.classList.add('visible');
+                }
+                
+            } catch (err) {
+                showError(err.message);
+                clientInfo.classList.remove('visible');
+                interactionsTable.classList.remove('visible');
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = 'Load Client Data';
+            }
+        }
+        
+        async function handleAction() {
+            const action = actionSelect.value;
+            
+            if (!action) {
+                return;
+            }
+            
+            hideError();
+            showLoading(resultContent);
+            resultTitle.textContent = getActionTitle(action);
+            resultView.classList.add('visible');
+            
+            try {
+                let response;
+                let data;
+                
+                switch (action) {
+                    case 'train':
+                        const trainModelType = modelSelect.value;
+                        response = await fetch(`${API_BASE}/train`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                model_type: trainModelType || undefined,
+                                use_weighted: useWeighted.checked
+                            })
+                        });
+                        data = await response.json();
+                        displayTrainResult(data);
+                        break;
+                        
+                    case 'recommend-new-item':
+                        if (!currentClientId) {
+                            showError('Please load a client first to get recommendations');
+                        }
+                        response = await fetch(`${API_BASE}/recommend/new-item`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: currentClientId,
+                                n_items: 10
+                            })
+                        });
+                        data = await response.json();
+                        displayRecommendations(data.recommendations);
+                        break;
+                        
+                    case 'recommend-repurchase':
+                        if (!currentClientId) {
+                            showError('Please load a client first to get recommendations');
+                        }
+                        response = await fetch(`${API_BASE}/recommend/repurchase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: currentClientId,
+                                n_items: 10
+                            })
+                        });
+                        data = await response.json();
+                        displayRecommendations(data.recommendations);
+                        break;
+                }
+            } catch (err) {
+                resultContent.innerHTML = `<div class="error visible">${err.message}</div>`;
+            }
+        }
+        
+        function getActionTitle(action) {
+            const titles = {
+                'train': 'Train Model',
+                'recommend-new-item': 'New Item Recommendations',
+                'recommend-repurchase': 'Repurchase Recommendations'
+            };
+            return titles[action] || 'Result';
+        }
+        
+        function displayTrainResult(data) {
+            if (data.status === 'success') {
+                resultContent.innerHTML = `
+                    <div class="result-item">
+                        <span class="result-item-id">Status</span>
+                        <span class="result-item-score">${data.status}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-item-id">Model Type</span>
+                        <span>${data.model_type}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-item-id">Model Name</span>
+                        <span>${data.model_name}</span>
+                    </div>
+                    ${data.matrix_shape ? `
+                    <div class="result-item">
+                        <span class="result-item-id">Matrix Shape</span>
+                        <span>${data.matrix_shape[0]} x ${data.matrix_shape[1]}</span>
+                    </div>
+                    ` : ''}
+                    ${data.saved_path ? `
+                    <div class="result-item">
+                        <span class="result-item-id">Saved Path</span>
+                        <span>${data.saved_path}</span>
+                    </div>
+                    ` : ''}
+                `;
+            } else {
+                resultContent.innerHTML = `<div class="error visible">Training failed</div>`;
+            }
+        }
+        
+        function displayRecommendations(recommendations) {
+            if (!recommendations || recommendations.length === 0) {
+                resultContent.innerHTML = '<div class="empty-state">No recommendations available</div>';
+                return;
+            }
+            
+            resultContent.innerHTML = recommendations.map((item, index) => `
+                <div class="result-item">
+                    <div>
+                        <span class="result-item-id">#${index + 1}</span>
+                        <span style="margin-left: 10px;">Item ID: ${item.item_id}</span>
+                    </div>
+                    <span class="result-item-name">${item.name}</span>
+                    <span class="result-item-score">Score: ${item.score}</span>
+                </div>
+            `).join('');
+        }
+        
+        loadBtn.addEventListener('click', loadClientData);
+        
+        clientInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadClientData();
+            }
+        });
+        
+        actionSelect.addEventListener('change', handleAction);
+        processActionBtn.addEventListener('click', handleAction);
+        
+        closeResult.addEventListener('click', () => {
+            resultView.classList.remove('visible');
+        });
+
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettings');
+        const configEditor = document.getElementById('configEditor');
+        const saveConfig = document.getElementById('saveConfig');
+        const cancelConfig = document.getElementById('cancelConfig');
+        const updateConfig = document.getElementById('updateConfig');
+        const settingsStatus = document.getElementById('settingsStatus');
+
+        let originalConfig = '';
+        let unsavedChanges = '';
+
+        function showSettingsStatus(message, isError = false) {
+            settingsStatus.textContent = message;
+            settingsStatus.className = 'settings-status visible ' + (isError ? 'error' : 'success');
+            setTimeout(() => {
+                settingsStatus.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function loadConfigContent() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const data = await response.json();
+                originalConfig = data.content;
+                unsavedChanges = data.content;
+                configEditor.value = data.content;
+            } catch (err) {
+                showSettingsStatus('Failed to load configuration: ' + err.message, true);
+            }
+        }
+
+        settingsBtn.addEventListener('click', async () => {
+            settingsModal.classList.add('visible');
+            await loadConfigContent();
+        });
+
+        closeSettings.addEventListener('click', () => {
+            settingsModal.classList.remove('visible');
+        });
+
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('visible');
+            }
+        });
+
+        configEditor.addEventListener('input', () => {
+            unsavedChanges = configEditor.value;
+        });
+
+        saveConfig.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: configEditor.value })
+                });
+                if (response.ok) {
+                    originalConfig = configEditor.value;
+                    showSettingsStatus('Configuration saved successfully');
+                } else {
+                    const error = await response.json();
+                    showSettingsStatus('Failed to save: ' + error.detail, true);
+                }
+            } catch (err) {
+                showSettingsStatus('Failed to save configuration: ' + err.message, true);
+            }
+        });
+
+        cancelConfig.addEventListener('click', () => {
+            configEditor.value = originalConfig;
+            unsavedChanges = originalConfig;
+            showSettingsStatus('Reloaded original configuration');
+        });
+
+        updateConfig.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/config/reload`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    await loadConfigContent();
+                    showSettingsStatus('Reloaded changes from file');
+                } else {
+                    const error = await response.json();
+                    showSettingsStatus('Failed to reload: ' + error.detail, true);
+                }
+            } catch (err) {
+                showSettingsStatus('Failed to reload configuration: ' + err.message, true);
+            }
+        });
+    </script>
+</body>
+</html>

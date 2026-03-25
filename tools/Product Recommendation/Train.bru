@@ -1,0 +1,31 @@
+meta {
+  name: Train
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{server}}/train
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "model_type": "als",
+    "params": {},
+    "user_col": "client_id",
+    "item_col": "product_id",
+    "rating_col": "quantity",
+    "interactions_query": "SELECT doi.quantity, doi.unit_price, c.id as client_id, p.id as product_id, p.minimal_price FROM delivery_orders as dlvo JOIN delivery_order_items as doi on doi.delivery_order_id = dlvo.id JOIN clients as c on c.id = dlvo.client_id JOIN products as p on p.id = doi.product_id",
+    "items_query": "SELECT id, name, minimal_price FROM products",
+    "users_query": "SELECT id, name FROM clients",
+    "save_model": true,
+    "model_path": "models/model.pkl"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
