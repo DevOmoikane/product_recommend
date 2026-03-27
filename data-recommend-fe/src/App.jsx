@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, memo } from 'react';
+import { useState, useCallback, useRef, memo, useEffect } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -16,20 +16,26 @@ import '@xyflow/react/dist/style.css';
 import Sidebar from './components/Sidebar';
 import useWorkflowPersistence from './hooks/useWorkflowPersistence';
 
-import DataSourceNode from './components/nodes/DataSourceNode';
-import SqlQueryNode from './components/nodes/SqlQueryNode';
-import MLModelNode from './components/nodes/MLModelNode';
-import ProcessorNode from './components/nodes/ProcessorNode';
-import OutputNode from './components/nodes/OutputNode';
+import BaseNode from './components/nodes/BaseNode.jsx';
 import { NODE_CONFIG, COMPATIBLE_CONNECTIONS } from './utils/nodeConfigs';
 
-const nodeTypes = {
-  dataSource: DataSourceNode,
-  sqlQuery: SqlQueryNode,
-  mlModel: MLModelNode,
-  processor: ProcessorNode,
-  output: OutputNode,
-};
+// const nodeTypes = {
+//   dataSource: (props) => {
+//     return <BaseNode {...props} type="dataSource" />
+//   },
+//   sqlQuery: (props) => {
+//     return <BaseNode {...props} type="sqlQuery" />
+//   },
+//   mlModel: (props) => {
+//     return <BaseNode {...props} type="mlModel" />
+//   },
+//   processor: (props) => {
+//     return <BaseNode {...props} type="processor" />
+//   },
+//   output: (props) => {
+//     return <BaseNode {...props} type="output" />
+//   },
+// };
 
 const CustomEdge = memo(({
   id,
@@ -74,8 +80,35 @@ function Flow() {
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+  const [nodeDefinitions, setNodeDefinitions] = useState([]);
+  const [nodeTypes, setNodeTypes] = useState({});
 
   const { saveWorkflow, loadWorkflow } = useWorkflowPersistence();
+
+  useEffect(() => {
+    const fetchNodeDefinitions = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/node-definitions');
+        const data = await response.json();
+        console.log('Fetched node definitions:', data);
+        setNodeDefinitions(data);
+        let _nodeTypes = {};
+        if (data.length > 0) {
+          data.forEach((nodeDefinition) => {
+            const [key, _] = Object.entries(nodeDefinition)[0];
+            _nodeTypes[key] = (props) => (
+              <BaseNode {...props} type={key} />
+            );
+          });
+        }
+        console.log('NodeTypes = ', _nodeTypes);
+        setNodeTypes(_nodeTypes);
+      } catch (error) {
+        console.error('Error fetching node definitions:', error);
+      }
+    };
+    fetchNodeDefinitions();
+  }, []);
 
   const onNodesChange = useCallback(
     (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -172,7 +205,12 @@ function Flow() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex' }}>
-      <Sidebar onSave={saveWorkflow} onLoad={() => loadWorkflow(setNodes, setEdges)} />
+      {/* TODO: pass the data from the backend API for creating the node types palette */}
+      <Sidebar 
+        onSave={saveWorkflow} 
+        onLoad={() => loadWorkflow(setNodes, setEdges)} 
+        nodeDefinitions={nodeDefinitions} 
+      />
       <div ref={reactFlowWrapper} style={{ flex: 1, height: '100%' }}>
         <ReactFlow
           nodes={nodes}

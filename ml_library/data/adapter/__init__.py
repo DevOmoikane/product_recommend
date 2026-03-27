@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
-from app.data.adapter.abstract_data_connector import AbstractDataConnector
-from app.data.adapter.postgresql_connector import PostgreSQLConnector
-from app.data.adapter.csv_connector import CSVConnector
+from .abstract_data_connector import AbstractDataConnector
+from .postgresql_connector import PostgreSQLConnector
+from .csv_connector import CSVConnector
 
 
 def create_connector(

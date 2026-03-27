@@ -3,6 +3,7 @@ import { Handle, Position, useReactFlow } from '@xyflow/react';
 import { NODE_CONFIG, validateNode } from '../../utils/nodeConfigs';
 import CustomHandle from '../CustomHandle';
 
+/*TODO: pass also the config*/
 function BaseNode({ id, type, data, selected }) {
   const { setNodes } = useReactFlow();
   const config = NODE_CONFIG[type];

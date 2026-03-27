@@ -1,3 +1,5 @@
+/* TODO: all this data will be provided by the API */
+
 export const NODE_TYPES = {
   DATA_SOURCE: 'dataSource',
   SQL_QUERY: 'sqlQuery',

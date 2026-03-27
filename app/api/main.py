@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import logging
@@ -16,7 +17,13 @@ from ml_library.utils.log import *
 
 
 app = FastAPI(title="Product Recommendation API", version="1.0.0")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 config = load_config("config.yaml")
@@ -61,12 +68,12 @@ class SimilarItemsRequest(BaseModel):
     n_items: int = 10
 
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/train", response_model=TrainResponse)
+@app.post("/api/train", response_model=TrainResponse)
 async def train_model(request: TrainRequest):
     global trainer, trainer_regression, recommender_new_item
     
@@ -120,7 +127,7 @@ async def train_model(request: TrainRequest):
     except Exception as e:
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
-@app.post("/recommend/new-item")
+@app.post("/api/recommend/new-item")
 async def recommend_new_items(request: RecommendRequest):
     global recommender_new_item
     
@@ -147,7 +154,7 @@ async def recommend_new_items(request: RecommendRequest):
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
 
-@app.post("/recommend/repurchase")
+@app.post("/api/recommend/repurchase")
 async def recommend_repurchase_items(request: RecommendRequest):
     global recommender_repurchase
     
@@ -181,7 +188,7 @@ async def recommend_repurchase_items(request: RecommendRequest):
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
 
-@app.post("/recommend")
+@app.post("/api/recommend")
 async def recommend_items(request: RecommendRequest):
     global recommender_new_item
     
@@ -209,7 +216,7 @@ async def recommend_items(request: RecommendRequest):
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
 
-@app.post("/items/similar")
+@app.post("/api/items/similar")
 async def get_similar_items(request: SimilarItemsRequest):
     global recommender_new_item
     
@@ -235,7 +242,7 @@ async def get_similar_items(request: SimilarItemsRequest):
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
 
-@app.post("/models/load")
+@app.post("/api/models/load")
 async def load_model(model_path: Optional[str] = None, model_name: Optional[str] = None):
     global recommender_new_item, recommender_repurchase
     
@@ -247,7 +254,7 @@ async def load_model(model_path: Optional[str] = None, model_name: Optional[str]
         raiselog(HTTPException(status_code=500, detail=str(e)))
 
 
-@app.get("/models/list")
+@app.get("/api/models/list")
 async def list_models():
     from app.model_base import ModelRegistry
     return {"available_models": ModelRegistry.list_models()}
@@ -261,7 +268,7 @@ class ClientDataResponse(BaseModel):
     total_orders: int = 0
 
 
-@app.get("/client/{client_id}", response_model=ClientDataResponse)
+@app.get("/api/client/{client_id}", response_model=ClientDataResponse)
 async def get_client_data(client_id: int):
     try:
         data_source = DataSource(config_path="config.yaml")
@@ -299,7 +306,7 @@ class ConfigUpdateRequest(BaseModel):
     content: str
 
 
-@app.get("/config")
+@app.get("/api/config")
 async def get_config():
     try:
         with open("config.yaml", "r") as f:
@@ -309,7 +316,7 @@ async def get_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/config")
+@app.post("/api/config")
 async def save_config(request: ConfigUpdateRequest):
     try:
         with open("config.yaml", "w") as f:
@@ -319,11 +326,44 @@ async def save_config(request: ConfigUpdateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/config/reload")
+@app.post("/api/config/reload")
 async def reload_config():
     global config
     try:
         config = load_config("config.yaml")
         return {"status": "success", "message": "Configuration reloaded successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/node-definitions")
+async def get_node_definitions():
+    try:
+        node_definitions = [
+            {"dataSource": {
+                "label": "Data Source", 
+                "icon": "📥", 
+                "color": "#4CAF50", 
+                "description": "Import data from various sources",
+                "inputs": [],
+                "outputs": [{"id": "output", "label": "Data", "type": "rawData", "color": "#4CAF50"}],
+                "fields": [
+                    {"name": "sourceType", "label": "Source Type", "type": "select", "options": ["csv", "api", "database"]},
+                    {"name": "connectionString", "label": "Connection String", "type": "text"}
+                ]}
+            },
+            {"mlModel": {
+                "label": "Machine Learning Node", 
+                "icon": "📥", 
+                "color": "#4CAF50", 
+                "description": "something bla bla bla",
+                "inputs": [],
+                "outputs": [{"id": "output", "label": "Data", "type": "rawData", "color": "#4CAF50"}],
+                "fields": [
+                    {"name": "sourceType", "label": "Source Type", "type": "select", "options": ["csv", "api", "database"]},
+                    {"name": "connectionString", "label": "Connection String", "type": "text"}
+                ]}
+            },
+        ]
+        return node_definitions
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

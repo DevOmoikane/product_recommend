@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { NODE_TYPES, NODE_CONFIG } from '../utils/nodeConfigs';
 
-export default function Sidebar({ onSave, onLoad }) {
+export default function Sidebar({ onSave, onLoad, nodeDefinitions }) {
   const onDragStart = useCallback((event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -16,21 +16,39 @@ export default function Sidebar({ onSave, onLoad }) {
       <div className="sidebar-content">
         <h3>Drag nodes to canvas</h3>
         <div className="node-list">
-          {Object.values(NODE_TYPES).map((type) => {
-            const config = NODE_CONFIG[type];
-            return (
-              <div
-                key={type}
-                className="draggable-node"
-                onDragStart={(event) => onDragStart(event, type)}
-                draggable
-                style={{ borderColor: config.color }}
-              >
-                <span className="node-icon">{config.icon}</span>
-                <span className="node-label">{config.label}</span>
-              </div>
-            );
-          })}
+          {Object.keys(nodeDefinitions).length > 0 ? (
+            Object.values(nodeDefinitions).map((definition) => {
+              const [key, value] = Object.entries(definition)[0];
+              return (
+                <div
+                  key={key}
+                  className="draggable-node"
+                  onDragStart={(event) => onDragStart(event, key)}
+                  draggable
+                  style={{ borderColor: value.color }}
+                >
+                  <span className="node-icon">{value.icon}</span>
+                  <span className="node-label">{value.label}</span>
+                </div>
+              );
+            })
+          ) : (
+            Object.values(NODE_TYPES).map((type) => {
+              const config = NODE_CONFIG[type];
+              return (
+                <div
+                  key={type}
+                  className="draggable-node"
+                  onDragStart={(event) => onDragStart(event, type)}
+                  draggable
+                  style={{ borderColor: config.color }}
+                >
+                  <span className="node-icon">{config.icon}</span>
+                  <span className="node-label">{config.label}</span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
