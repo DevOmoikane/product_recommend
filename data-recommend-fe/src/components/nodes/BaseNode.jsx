@@ -1,12 +1,27 @@
 import { memo, useCallback } from 'react';
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { NODE_CONFIG, validateNode } from '../../utils/nodeConfigs';
 import CustomHandle from '../CustomHandle';
 
-/*TODO: pass also the config*/
+const validateNode = (node, nodeDefinition) => {
+  if (!nodeDefinition) return { isValid: false, errors: ['Unknown node type'] };
+
+  const errors = [];
+  nodeDefinition.fields.forEach(field => {
+    const value = node.data.config[field.name];
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      errors.push(`${field.label} is required`);
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
 function BaseNode({ id, type, data, selected }) {
   const { setNodes } = useReactFlow();
-  const config = NODE_CONFIG[type];
+  const nodeDefinition = data.nodeDefinition;
 
   const handleConfigChange = useCallback((fieldName, value) => {
     setNodes((nodes) =>
@@ -17,7 +32,7 @@ function BaseNode({ id, type, data, selected }) {
             ...node,
             data: { ...node.data, config: newConfig },
           };
-          const validation = validateNode(updatedNode);
+          const validation = validateNode(updatedNode, nodeDefinition);
           return {
             ...updatedNode,
             data: { ...updatedNode.data, isValid: validation.isValid, errors: validation.errors },
@@ -26,7 +41,7 @@ function BaseNode({ id, type, data, selected }) {
         return node;
       })
     );
-  }, [id, setNodes]);
+  }, [id, setNodes, nodeDefinition]);
 
   const renderField = (field) => {
     const value = data.config[field.name] || '';
@@ -111,18 +126,18 @@ function BaseNode({ id, type, data, selected }) {
   return (
     <div
       className={`base-node ${selected ? 'selected' : ''} ${data.isValid ? 'valid' : 'invalid'}`}
-      style={{ borderColor: config.color }}
+      style={{ borderColor: nodeDefinition.color }}
     >
-      {renderHandles(config.inputs, Position.Left)}
+      {renderHandles(nodeDefinition.inputs, Position.Left)}
 
-      <div className="node-header" style={{ backgroundColor: config.color }}>
-        <span className="node-icon">{config.icon}</span>
+      <div className="node-header" style={{ backgroundColor: nodeDefinition.color }}>
+        <span className="node-icon">{nodeDefinition.icon}</span>
         <span className="node-label">{data.label}</span>
       </div>
       
       <div className="node-content" style={{paddingLeft: '5em', paddingRight: '5em'}}>
         <div className="node-form">
-          {config.fields.map((field) => (
+          {nodeDefinition.fields.map((field) => (
             <div key={field.name} className="field-group">
               <label className="field-label">{field.label}</label>
               {renderField(field)}
@@ -138,7 +153,7 @@ function BaseNode({ id, type, data, selected }) {
         )}
       </div>
       
-      {renderHandles(config.outputs, Position.Right)}
+      {renderHandles(nodeDefinition.outputs, Position.Right)}
     </div>
   );
 }

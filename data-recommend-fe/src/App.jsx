@@ -17,25 +17,7 @@ import Sidebar from './components/Sidebar';
 import useWorkflowPersistence from './hooks/useWorkflowPersistence';
 
 import BaseNode from './components/nodes/BaseNode.jsx';
-import { NODE_CONFIG, COMPATIBLE_CONNECTIONS } from './utils/nodeConfigs';
-
-// const nodeTypes = {
-//   dataSource: (props) => {
-//     return <BaseNode {...props} type="dataSource" />
-//   },
-//   sqlQuery: (props) => {
-//     return <BaseNode {...props} type="sqlQuery" />
-//   },
-//   mlModel: (props) => {
-//     return <BaseNode {...props} type="mlModel" />
-//   },
-//   processor: (props) => {
-//     return <BaseNode {...props} type="processor" />
-//   },
-//   output: (props) => {
-//     return <BaseNode {...props} type="output" />
-//   },
-// };
+import { COMPATIBLE_CONNECTIONS } from './utils/nodeConfigs';
 
 const CustomEdge = memo(({
   id,
@@ -76,6 +58,29 @@ const edgeTypes = {
 const initialNodes = [];
 const initialEdges = [];
 
+const getNodeDefinitionByType = (nodeDefinitions, type) => {
+  if (!nodeDefinitions || !Array.isArray(nodeDefinitions) || !type) {
+    return null;
+  }
+
+  const nodeDefinition = nodeDefinitions.find(def => {
+    const [key] = Object.keys(def);
+    return key === type;
+  });
+
+  if (!nodeDefinition) {
+    return null;
+  }
+
+  // Return both the type and its configuration
+  const [nodeType, nodeConfig] = Object.entries(nodeDefinition)[0];
+  return {
+    type: nodeType,
+    config: nodeConfig,
+    definition: nodeDefinition // Original definition object
+  };
+};
+
 function Flow() {
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes] = useState(initialNodes);
@@ -101,7 +106,6 @@ function Flow() {
             );
           });
         }
-        console.log('NodeTypes = ', _nodeTypes);
         setNodeTypes(_nodeTypes);
       } catch (error) {
         console.error('Error fetching node definitions:', error);
@@ -128,11 +132,11 @@ function Flow() {
         return;
       }
 
-      const sourceConfig = NODE_CONFIG[sourceNode.type];
-      const targetConfig = NODE_CONFIG[targetNode.type];
+      const sourceDefinition = getNodeDefinitionByType(nodeDefinitions, sourceNode.type);
+      const targetDefinition = getNodeDefinitionByType(nodeDefinitions, targetNode.type);
 
-      const sourceHandle = sourceConfig?.outputs?.find(o => o.id === params.sourceHandle);
-      const targetHandle = targetConfig?.inputs?.find(i => i.id === params.targetHandle);
+      const sourceHandle = sourceDefinition?.config?.outputs?.find(o => o.id === params.sourceHandle);
+      const targetHandle = targetDefinition?.config?.inputs?.find(i => i.id === params.targetHandle);
 
       const edgeColor = sourceHandle?.color || targetHandle?.color || '#999';
 
@@ -143,7 +147,7 @@ function Flow() {
 
       setEdges((edgesSnapshot) => addEdge(edgeWithColor, edgesSnapshot));
     },
-    [nodes],
+    [nodes, nodeDefinitions],
   );
 
   const isValidConnection = useCallback((connection) => {
@@ -154,8 +158,8 @@ function Flow() {
 
     if (!sourceNode || !targetNode) return false;
 
-    const sourceConfig = NODE_CONFIG[sourceNode.type];
-    const targetConfig = NODE_CONFIG[targetNode.type];
+    const sourceConfig = getNodeDefinitionByType(nodeDefinitions, sourceNode.type)?.config;
+    const targetConfig = getNodeDefinitionByType(nodeDefinitions, targetNode.type)?.config;
 
     if (!sourceConfig || !targetConfig) return false;
 
@@ -168,7 +172,7 @@ function Flow() {
     if (!compatibleTypes.includes(targetHandle.type)) return false;
 
     return true;
-  }, [nodes]);
+  }, [nodes, nodeDefinitions]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -181,6 +185,13 @@ function Flow() {
       const type = event.dataTransfer.getData('application/reactflow');
       if (!type || !reactFlowWrapper.current) return;
 
+      const nodeDefinitionData = getNodeDefinitionByType(nodeDefinitions, type);
+
+      if (!nodeDefinitionData) {
+        console.error(`Node definition not found for type: ${type}`);
+        return;
+      }
+
       const bounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = {
         x: event.clientX - bounds.left - 280,
@@ -188,19 +199,20 @@ function Flow() {
       };
 
       const newNode = {
-        id: `${type}-${Date.now()}`,
-        type,
+        id: `${nodeDefinitionData.type}-${Date.now()}`,
+        type: nodeDefinitionData.type,
         position,
         data: {
-          label: type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1').trim(),
-          config: {},
+          label: nodeDefinitionData.config.name || nodeDefinitionData.type.charAt(0).toUpperCase() + nodeDefinitionData.type.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+          config: nodeDefinitionData.config || {},
           isValid: false,
+          nodeDefinition: nodeDefinitionData.config,
         },
       };
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes]
+    [setNodes, nodeDefinitions]
   );
 
   return (

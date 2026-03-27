@@ -126,21 +126,3 @@ export const createNode = (type, position) => {
     data: defaultData,
   };
 };
-
-export const validateNode = (node) => {
-  const config = NODE_CONFIG[node.type];
-  if (!config) return { isValid: false, errors: ['Unknown node type'] };
-
-  const errors = [];
-  config.fields.forEach(field => {
-    const value = node.data.config[field.name];
-    if (!value || (typeof value === 'string' && value.trim() === '')) {
-      errors.push(`${field.label} is required`);
-    }
-  });
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-};
