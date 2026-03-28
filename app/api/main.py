@@ -14,7 +14,12 @@ from app.recommender import Recommender
 from ml_library.utils.config import load_config
 from ml_library.data.data_source import DataSource
 from ml_library.utils.log import *
+from ml_library.utils.node_definition import NodeRegistry
 
+from ml_library.utils.plugins import load_plugins
+
+load_plugins("ml_library.data")
+load_plugins("ml_library.model")
 
 app = FastAPI(title="Product Recommendation API", version="1.0.0")
 app.add_middleware(
@@ -338,32 +343,8 @@ async def reload_config():
 @app.get("/api/node-definitions")
 async def get_node_definitions():
     try:
-        node_definitions = [
-            {"dataSource": {
-                "label": "Data Source", 
-                "icon": "📥", 
-                "color": "#4CAF50", 
-                "description": "Import data from various sources",
-                "inputs": [],
-                "outputs": [{"id": "output", "label": "Data", "type": "rawData", "color": "#4CAF50"}],
-                "fields": [
-                    {"name": "sourceType", "label": "Source Type", "type": "select", "options": ["csv", "api", "database"]},
-                    {"name": "connectionString", "label": "Connection String", "type": "text"}
-                ]}
-            },
-            {"mlModel": {
-                "label": "Machine Learning Node", 
-                "icon": "📥", 
-                "color": "#4CAF50", 
-                "description": "something bla bla bla",
-                "inputs": [],
-                "outputs": [{"id": "output", "label": "Data", "type": "rawData", "color": "#4CAF50"}],
-                "fields": [
-                    {"name": "sourceType", "label": "Source Type", "type": "select", "options": ["csv", "api", "database"]},
-                    {"name": "connectionString", "label": "Connection String", "type": "text"}
-                ]}
-            },
-        ]
+        node_definitions = NodeRegistry.get_nodes()
         return node_definitions
     except Exception as e:
+        logerror(f"Error getting node definitions: {e}")
         raise HTTPException(status_code=500, detail=str(e))

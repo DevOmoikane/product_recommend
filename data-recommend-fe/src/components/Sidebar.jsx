@@ -27,7 +27,7 @@ export default function Sidebar({ onSave, onLoad, nodeDefinitions }) {
                   draggable
                   style={{ borderColor: value.color }}
                 >
-                  <span className="node-icon">{value.icon}</span>
+                  <span className="node-icon"><i className={value.icon}></i></span>
                   <span className="node-label">{value.label}</span>
                 </div>
               );
@@ -43,7 +43,7 @@ export default function Sidebar({ onSave, onLoad, nodeDefinitions }) {
                   draggable
                   style={{ borderColor: config.color }}
                 >
-                  <span className="node-icon">{config.icon}</span>
+                  <span className="node-icon"><i className={config.icon}></i></span>
                   <span className="node-label">{config.label}</span>
                 </div>
               );

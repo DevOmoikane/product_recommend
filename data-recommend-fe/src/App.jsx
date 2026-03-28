@@ -12,6 +12,7 @@ import {
   getBezierPath,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import 'font-awesome/css/font-awesome.min.css';
 
 import Sidebar from './components/Sidebar';
 import useWorkflowPersistence from './hooks/useWorkflowPersistence';

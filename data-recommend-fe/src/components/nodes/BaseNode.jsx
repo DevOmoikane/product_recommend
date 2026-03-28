@@ -131,7 +131,7 @@ function BaseNode({ id, type, data, selected }) {
       {renderHandles(nodeDefinition.inputs, Position.Left)}
 
       <div className="node-header" style={{ backgroundColor: nodeDefinition.color }}>
-        <span className="node-icon">{nodeDefinition.icon}</span>
+        <span className="node-icon"><i className={nodeDefinition.icon}></i></span>
         <span className="node-label">{data.label}</span>
       </div>
       
