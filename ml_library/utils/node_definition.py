@@ -7,6 +7,8 @@ import re
 import random
 import string
 from singleton_decorator import singleton
+from .log import *
+import pprint
 
 
 @singleton
@@ -69,9 +71,9 @@ def node(*, friendly_name: str | None = None, color: str = "", description: str 
         }
 
         for attr_name, attr in cls.__dict__.items():
-
+            attr = getattr(cls, attr_name)
             if hasattr(attr, "_node_property"):
-                # meta["fields"][attr_name] = attr._node_property
+                print(f"\nNode property: {attr._node_property}\n")
                 kind = attr._node_property["kind"]
                 data = {
                     "id": attr_name,
@@ -98,15 +100,19 @@ def node(*, friendly_name: str | None = None, color: str = "", description: str 
 
     return decorator
 
-
-def node_property(*, type_: type, kind: str = "field", label: str | None = None):
+def node_property(type_: type, kind: str = "field", label: str | None = None):
     def decorator(func):
+        print(f"Registering property {func.__name__} of type {type_} with kind {kind} and label {label} ")
         func._node_property = {
             "id": func.__name__,
             "label": label or humanize(func.__name__),
             "type": type_,
             "kind": kind
         }
+        try:
+            pprint(func)
+        except:
+            pass
         return func
     return decorator
 

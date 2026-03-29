@@ -236,7 +236,6 @@ function Flow() {
           edgeTypes={edgeTypes}
           onDragOver={onDragOver}
           onDrop={onDrop}
-          fitView
         >
           <Background variant="dots" gap={20} size={1} />
           <Controls />
