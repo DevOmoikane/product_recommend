@@ -82,10 +82,9 @@ function BaseNode({ id, type, data, selected }) {
     );
   };
 
-  const renderHandles = (handles, position) => {
+  const renderHandles = (handles, isInput) => {
     if (!handles || handles.length === 0) return null;
     
-    const isInput = position === Position.Left;
     const spacing = 50;
     const startY = -(handles.length - 1) * spacing / 2;
 
@@ -95,40 +94,32 @@ function BaseNode({ id, type, data, selected }) {
         className={`handle-wrapper ${isInput ? 'handle-input' : 'handle-output'}`}
         style={{ top: `calc(50% + ${startY + index * spacing}px)` }}
       >
-        {isInput ? (
-          <>
-            <CustomHandle
-              type="target"
-              position={Position.Left}
-              id={handle.id}
-              className="handle"
-              connectionCount={handle.connectionCount ?? 1}
-              style={{ background: handle.color, borderColor: handle.color }}
-            />
-            <label className="handle-label" style={{ color: handle.color }}>{handle.label}</label>
-          </>
-        ) : (
-          <>
-            <label className="handle-label" style={{ color: handle.color }}>{handle.label}</label>
-            <CustomHandle
-              type="source"
-              position={Position.Right}
-              id={handle.id}
-              className="handle"
-              style={{ background: handle.color, borderColor: handle.color }}
-            />
-          </>
-        )}
+        <CustomHandle
+          type={isInput ? "source" :"target"}
+          position={isInput ? Position.Left : Position.Right}
+          id={handle.id}
+          className="handle"
+          connectioncount={handle.connection_count ?? 1}
+          style={{ background: handle.color, borderColor: handle.color }}
+          label={handle.label}
+        />
       </div>
     ));
   };
 
+  const baseHeight = 140; // header height
+  const fieldHeight = 40; // height per field
+  const handleSpacing = 50; // spacing between handles
+  const handlesHeight = (nodeDefinition.inputs.length - 1) * handleSpacing;
+  const contentHeight = Math.max(nodeDefinition.fields.length * fieldHeight, handlesHeight);
+  const totalHeight = baseHeight + contentHeight;
+
   return (
     <div
       className={`base-node ${selected ? 'selected' : ''} ${data.isValid ? 'valid' : 'invalid'}`}
-      style={{ borderColor: nodeDefinition.color }}
+      style={{ borderColor: nodeDefinition.color, height: totalHeight }}
     >
-      {renderHandles(nodeDefinition.inputs, Position.Left)}
+      {renderHandles(nodeDefinition.inputs, true)}
 
       <div className="node-header" style={{ backgroundColor: nodeDefinition.color }}>
         <span className="node-icon"><i className={nodeDefinition.icon}></i></span>
@@ -153,7 +144,7 @@ function BaseNode({ id, type, data, selected }) {
         )}
       </div>
       
-      {renderHandles(nodeDefinition.outputs, Position.Right)}
+      {renderHandles(nodeDefinition.outputs, false)}
     </div>
   );
 }

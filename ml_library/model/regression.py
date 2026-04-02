@@ -24,6 +24,28 @@ class ModelRegressionRegistry(BaseRegistry):
 class ModelRegression(BaseModel):
     _friendly_name: str = "Regression Model"
 
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "data": {"type": pd.DataFrame, "description": "Input data for training the model"},
+                "data_columns": {"type": List[str], "description": "List of columns to be used as features"},
+                "value_columns": {"type": List[str], "description": "List of columns to be used as target values"},
+                "drop_columns": {"type": List[str], "default": None, "description": "List of columns to be dropped from the data"},
+                "scale_columns": {"type": List[str], "default": None, "description": "List of columns to be scaled"},
+                "ohe_columns": {"type": List[str], "default": None, "description": "List of columns to be one-hot encoded"},
+                "le_columns": {"type": List[str], "default": None, "description": "List of columns to be label encoded"},
+            }
+        }
+    
+    @classmethod
+    def OUT(cls):
+        return {
+            "type": Any,
+            "label": "",
+            "function": "predict",
+        }
+
     def __init__(self, **kwargs):
         super().__init__()
         self._matrix: Optional[csr_matrix] = None

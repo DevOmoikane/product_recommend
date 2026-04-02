@@ -14,7 +14,7 @@ from app.recommender import Recommender
 from ml_library.utils.config import load_config
 from ml_library.data.data_source import DataSource
 from ml_library.utils.log import *
-from ml_library.utils.node_definition import NodeRegistry
+from ml_library.utils.nodes.node_definition import NodeRegistry
 
 from ml_library.utils.plugins import load_plugins
 

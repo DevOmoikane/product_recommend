@@ -1,5 +1,7 @@
 import importlib
 import pkgutil
+from pprint import pprint
+import traceback
 
 def load_plugins(package_name: str):
     """
@@ -28,5 +30,7 @@ def load_plugins(package_name: str):
         try:
             importlib.import_module(module_info.name)
             print(f"Loaded plugin: {module_info.name}")
-        except Exception as e:
-            print(f"Warning: Could not load plugin {module_info.name}: {e}")
+        except Exception:
+            trace_string = traceback.format_exc()
+            print(f"Warning: Could not load plugin {module_info.name}:\n")
+            pprint(trace_string)

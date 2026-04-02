@@ -100,3 +100,9 @@ class BaseModel(ABC):
         for cls in instance.__class__.mro():
             for var_name, var_value in cls.__dict__.items():
                 logdebug(f"{cls.__name__} - {var_name}: {var_value}")
+
+
+class ModelSaver:
+
+    def save(self, model: BaseModel, path: str) -> None:
+        model.save_model(path)

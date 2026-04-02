@@ -61,6 +61,7 @@ const initialEdges = [];
 
 const getNodeDefinitionByType = (nodeDefinitions, type) => {
   if (!nodeDefinitions || !Array.isArray(nodeDefinitions) || !type) {
+    console.warn(`Invalid node definitions or type:`, nodeDefinitions, type);
     return null;
   }
 
@@ -70,6 +71,7 @@ const getNodeDefinitionByType = (nodeDefinitions, type) => {
   });
 
   if (!nodeDefinition) {
+    console.warn(`Node definition not found for type: ${type}`);
     return null;
   }
 
@@ -125,8 +127,8 @@ function Flow() {
   );
   const onConnect = useCallback(
     (params) => {
-      const sourceNode = nodes.find(n => n.id === params.source);
-      const targetNode = nodes.find(n => n.id === params.target);
+      const sourceNode = nodes.find(n => n.id === params.target);
+      const targetNode = nodes.find(n => n.id === params.source);
       
       if (!sourceNode || !targetNode) {
         setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot));
@@ -136,8 +138,8 @@ function Flow() {
       const sourceDefinition = getNodeDefinitionByType(nodeDefinitions, sourceNode.type);
       const targetDefinition = getNodeDefinitionByType(nodeDefinitions, targetNode.type);
 
-      const sourceHandle = sourceDefinition?.config?.outputs?.find(o => o.id === params.sourceHandle);
-      const targetHandle = targetDefinition?.config?.inputs?.find(i => i.id === params.targetHandle);
+      const sourceHandle = sourceDefinition?.config?.outputs?.find(o => o.id === params.targetHandle);
+      const targetHandle = targetDefinition?.config?.inputs?.find(i => i.id === params.sourceHandle);
 
       const edgeColor = sourceHandle?.color || targetHandle?.color || '#999';
 
@@ -148,32 +150,51 @@ function Flow() {
 
       setEdges((edgesSnapshot) => addEdge(edgeWithColor, edgesSnapshot));
     },
-    [nodes, nodeDefinitions],
+    [nodes, nodeDefinitions]
   );
 
-  const isValidConnection = useCallback((connection) => {
-    if (connection.source === connection.target) return false;
+  const isValidConnection = useCallback(
+    (connection) => {
+      // the source and target on the connection are reversed
+      if (connection.source === connection.target) {
+        return false;
+      }
 
-    const sourceNode = nodes.find(n => n.id === connection.source);
-    const targetNode = nodes.find(n => n.id === connection.target);
+      const sourceNode = nodes.find(n => n.id === connection.target);
+      const targetNode = nodes.find(n => n.id === connection.source);
 
-    if (!sourceNode || !targetNode) return false;
+      if (!sourceNode || !targetNode) {
+        return false;
+      }
 
-    const sourceConfig = getNodeDefinitionByType(nodeDefinitions, sourceNode.type)?.config;
-    const targetConfig = getNodeDefinitionByType(nodeDefinitions, targetNode.type)?.config;
+      const sourceDefinition = getNodeDefinitionByType(nodeDefinitions, sourceNode.type);
+      const targetDefinition = getNodeDefinitionByType(nodeDefinitions, targetNode.type);
 
-    if (!sourceConfig || !targetConfig) return false;
+      if (!sourceDefinition || !targetDefinition) {
+        return false;
+      }
+      const sourceHandle = sourceDefinition?.config?.outputs?.find(o => o.id === connection.targetHandle);
+      const targetHandle = targetDefinition?.config?.inputs?.find(i => i.id === connection.sourceHandle);
 
-    const sourceHandle = sourceConfig.outputs?.find(o => o.id === connection.sourceHandle);
-    const targetHandle = targetConfig.inputs?.find(i => i.id === connection.targetHandle);
+      if (!sourceHandle || !targetHandle) {
+        return false;
+      }
 
-    if (!sourceHandle || !targetHandle) return false;
+      // Check if target handle connection count is already at max, remember that source and target are reversed in the connection object
+      const targetConnections = edges.filter(e => e.source === connection.source && e.sourceHandle === connection.sourceHandle);
+      if (targetConnections.length >= (targetHandle.connection_count || 1)) {
+        return false;
+      }
 
-    const compatibleTypes = COMPATIBLE_CONNECTIONS[sourceHandle.type] || [];
-    if (!compatibleTypes.includes(targetHandle.type)) return false;
+      const compatibleTypes = COMPATIBLE_CONNECTIONS[sourceHandle.type] || [];
 
-    return true;
-  }, [nodes, nodeDefinitions]);
+      if (sourceHandle.type === targetHandle.type || compatibleTypes.includes(targetHandle.type)) {
+        return true;
+      }
+      return false;
+    }, 
+    [nodes, nodeDefinitions, edges]
+  );
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
