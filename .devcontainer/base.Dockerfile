@@ -47,5 +47,8 @@ RUN rm -rf /tmp/library-scripts
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
 
+# Configure NPM so it does not install node modules that are 3 or less days old to prevent malicious software
+RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm config set min-release-age 3" 2>&1
+
 # [Optional] Uncomment this line to install global node packages.
 # RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1

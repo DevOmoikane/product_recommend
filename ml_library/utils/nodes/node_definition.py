@@ -11,7 +11,7 @@ import string
 from pydantic import color
 from singleton_decorator import singleton
 from ..log import *
-import pprint
+from pprint import pprint
 import pandas as pd
 
 
@@ -21,6 +21,7 @@ COMMON_TYPE_COLOR_MAP = {
     str: "#5733FF",
     bool: "#FF33A1",
     list: "#FFA133",
+    List: "#FFA133",
     dict: "#33A1FF",
     Dict: "#33A1FF",
     Any: "#FFFFFF",
@@ -79,7 +80,7 @@ class NodeInputMode(Enum):
     REQUIRED = 1
     HIDDEN = 2
 
-def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = ""):
+def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", function: str = ""):
     def decorator(cls):
         global NodeRegistry
         meta = {
@@ -106,9 +107,83 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
                     "connection_count": input_info.get("connection_count", 1),
                 })
 
+        _function_call = None
+        _return_type = None
+        _id = None
+        _label = None
+        _description = None
+        _args = None
+        if hasattr(cls, "FUNCTION") and hasattr(cls, "RETURN_TYPE"):
+            _function_call = cls.FUNCTION
+            _return_type = cls.RETURN_TYPE
+        elif function!="" and hasattr(cls, function) and callable(getattr(cls, function)):
+            _function_call = function
+            _return_type = get_type_hints(getattr(cls, function)).get("return", None)
+        for attr_name, attr in cls.__dict__.items():
+            if hasattr(attr, "_node_method"):
+                _id = attr_name
+                _function_call = attr._node_method["id"]
+                _return_type = attr._node_method["return"]
+                _label = attr._node_method["friendly_name"]
+                _description = attr._node_method["description"]
+                _args = attr._node_method["args"]
+        if _function_call is not None and _return_type is not None:
+            _type_color = NodeRegistry._register_type(_return_type)
+            meta["outputs"].append({
+                "id": _id or _function_call,
+                "label": _label or humanize(_function_call),
+                "type": serialize_type(_return_type),
+                "color": _type_color,
+                "description": _description or "",
+            })
+            if _args is not None and len(_args)>0:
+                for arg in _args:
+                    _arg_color = NodeRegistry._register_type(arg["type"])
+                    meta["inputs"].append({
+                        "id": arg["id"],
+                        "label": arg["label"],
+                        "type": serialize_type(arg["type"]),
+                        "color": _arg_color,
+                        "description": "",
+                        "connection_count": 1,
+                    })
+
         cls._node_meta = meta
         NodeRegistry._register_node(cls.__name__, meta)
         return cls
 
     return decorator
+
+
+def node_method(func=None, output_label: str = "", description: str = ""):
+    def decorator(f):
+        actual_func = f
+        if hasattr(f, '__func__'):
+            actual_func = f.__func__
+        
+        sig = inspect.signature(actual_func)
+        type_hints = get_type_hints(actual_func)
+        args = []
+        if sig.parameters:
+            for param in sig.parameters.values():
+                if param.name in ('self', 'cls'):
+                    continue
+                args.append({
+                    "id": param.name,
+                    "label": humanize(param.name),
+                    "type": param.annotation or type_hints.get(param.name, None),
+                    "default": None if param.default is inspect.Parameter.empty else param.default
+                })
+        f._node_method = {
+            "id": actual_func.__name__,
+            "return": type_hints.get("return", None),
+            "friendly_name": output_label,
+            "description": description,
+            "args": args,
+        }
+        return f
+    
+    if func is None:
+        return decorator
+    return decorator(func)
 

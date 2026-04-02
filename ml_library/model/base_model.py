@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List, Type, ClassVar
 import joblib
 from pathlib import Path
 from ..utils.log import *
+from ..utils.nodes.node_definition import node, node_method
 
 
 class BaseRegistry(ABC):
@@ -102,7 +103,31 @@ class BaseModel(ABC):
                 logdebug(f"{cls.__name__} - {var_name}: {var_value}")
 
 
+@node(
+    friendly_name="Model Saver",
+    description="Save a generated model to disk.",
+    icon="fa fa-tree",
+    color="#DDE00F"
+)
 class ModelSaver:
-
-    def save(self, model: BaseModel, path: str) -> None:
+    @node_method
+    @staticmethod
+    def save(model: BaseModel, path: str) -> BaseModel:
         model.save_model(path)
+        return model
+    
+@node(
+    friendly_name="Model Loader",
+    description="Load a model from disk.",
+    icon="fa fa-tree",
+    color="#DDE00F"
+)
+class ModelLoader:
+    @node_method
+    @classmethod
+    def load(cls, path: str) -> BaseModel | None:
+        try:
+            return cls.load_model(path)
+        except Exception as e:
+            return None
+
