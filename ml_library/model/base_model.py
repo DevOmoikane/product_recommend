@@ -110,11 +110,14 @@ class BaseModel(ABC):
     color="#DDE00F"
 )
 class ModelSaver:
-    @node_method
+    @node_method(output_label="Model")
     @staticmethod
-    def save(model: BaseModel, path: str) -> BaseModel:
-        model.save_model(path)
-        return model
+    def save(model: BaseModel | None, path: str) -> BaseModel | None:
+        try:
+            model.save_model(path)
+            return model
+        except Exception:
+            return None
     
 @node(
     friendly_name="Model Loader",
@@ -123,7 +126,7 @@ class ModelSaver:
     color="#DDE00F"
 )
 class ModelLoader:
-    @node_method
+    @node_method(output_label="Model")
     @classmethod
     def load(cls, path: str) -> BaseModel | None:
         try:

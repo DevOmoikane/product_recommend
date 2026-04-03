@@ -168,12 +168,13 @@ def node_method(func=None, output_label: str = "", description: str = ""):
             for param in sig.parameters.values():
                 if param.name in ('self', 'cls'):
                     continue
-                args.append({
+                argument = {
                     "id": param.name,
                     "label": humanize(param.name),
-                    "type": param.annotation or type_hints.get(param.name, None),
+                    "type": type_hints.get(param.name, None) or param.annotation if param.annotation != inspect.Parameter.empty else None,
                     "default": None if param.default is inspect.Parameter.empty else param.default
-                })
+                }
+                args.append(argument)
         f._node_method = {
             "id": actual_func.__name__,
             "return": type_hints.get("return", None),
