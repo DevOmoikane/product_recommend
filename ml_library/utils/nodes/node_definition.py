@@ -2,11 +2,12 @@ from __future__ import annotations
 import functools
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args
 from enum import Enum
 import re
 import random
 import string
+from types import UnionType
 
 from pydantic import color
 from singleton_decorator import singleton
@@ -73,8 +74,14 @@ def humanize(name: str) -> str:
 
 def serialize_type(t):
     if t is None:
-        return None
-    return getattr(t, "__name__", str(t))
+        return []
+    
+    origin = get_origin(t)
+    if origin is Union or origin is UnionType:
+        args = get_args(t)
+        return [getattr(arg, "__name__", str(arg)) for arg in args if arg is not type(None)]
+    
+    return [getattr(t, "__name__", str(t))]
 
 class NodeInputMode(Enum):
     REQUIRED = 1

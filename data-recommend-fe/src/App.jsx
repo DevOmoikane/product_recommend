@@ -186,12 +186,18 @@ function Flow() {
         return false;
       }
 
-      const compatibleTypes = COMPATIBLE_CONNECTIONS[sourceHandle.type] || [];
+      const sourceTypes = Array.isArray(sourceHandle.type) ? sourceHandle.type : [sourceHandle.type];
+      const targetTypes = Array.isArray(targetHandle.type) ? targetHandle.type : [targetHandle.type];
 
-      if (sourceHandle.type === targetHandle.type || compatibleTypes.includes(targetHandle.type)) {
-        return true;
-      }
-      return false;
+      const isCompatible = sourceTypes.some(sourceType => {
+        const compatibleTypes = COMPATIBLE_CONNECTIONS[sourceType] || [];
+        // Check direct match or compatible types
+        return targetTypes.some(targetType => 
+          sourceType === targetType || compatibleTypes.includes(targetType)
+        );
+      });
+
+      return isCompatible;
     }, 
     [nodes, nodeDefinitions, edges]
   );
