@@ -1,6 +1,7 @@
 from __future__ import annotations
 import functools
 import inspect
+import importlib
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args
 from enum import Enum
@@ -35,6 +36,37 @@ COMMON_TYPE_COLOR_MAP = {
     pd.Series: "#A1A1A1",
     type(None): "#FFFFFF",
 }
+
+# I dont need to re-create a node, just for sending the node definition, is already done down, so this class should be for creating only the object instances
+def create_instance_from_string(full_path: str):
+    try:
+        module_path, _, class_name = full_path.rpartition('.')
+        module = importlib.import_module(module_path)
+        class_obj = getattr(module, class_name)
+        return class_obj
+    except (ImportError, AttributeError) as e:
+        logerror(f"Error creating instance from string: {e}")
+        return None
+
+class ClassFactory:
+    def __init__(self, _class: str):
+        self._class = _class
+        self.inputs = []
+        self.outputs = []
+        self.fields = []
+        # find the class with the name _class provided and instantiate
+        self._instance = create_instance_from_string(self._class)
+
+    def execute(self, method: str, *args, **kwargs) -> Any:
+        if hasattr(self._instance, method):
+            method_instance = getattr(self._instance, method)
+            if callable(method_instance):
+                result = method_instance(*args, **kwargs)
+                return result
+        else:
+            logerror(f"Method {method} not found in class {self._class}")
+            return None
+
 
 @singleton
 class _NodeRegistry:
@@ -92,6 +124,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
         global NodeRegistry
         meta = {
             "label": friendly_name or humanize(cls.__name__),
+            "full_class_path": f"{cls.__module__}.{cls.__name__}",
             "icon": icon,
             "color": color,
             "description": description,
