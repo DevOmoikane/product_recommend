@@ -125,6 +125,24 @@ function Flow() {
     (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
     [],
   );
+  const onEdgesDelete = useCallback(
+    (edgeIds) => {
+      // Iterate over each edgeId data on edgeIds
+      edgeIds.forEach((edge) => {
+        const targetNode = nodes.find(n => n.id === edge.source);
+        const targetHandleName = edge.targetHandle;
+        // If there is a field with the same name as the the target handle, enable it again
+        if (targetNode && targetNode.data.nodeDefinition) {
+          const targetField = targetNode.data.nodeDefinition.fields.find(f => f.name === targetHandleName);
+          if (targetField) {
+            targetField.disabled = false;
+          }
+        }
+      });
+      setEdges((edgesSnapshot) => edgesSnapshot.filter((edge) => !edgeIds.includes(edge.id)))
+    },
+    [nodes],
+  );
   const onConnect = useCallback(
     (params) => {
       const sourceNode = nodes.find(n => n.id === params.target);
@@ -140,6 +158,14 @@ function Flow() {
 
       const sourceHandle = sourceDefinition?.config?.outputs?.find(o => o.id === params.targetHandle);
       const targetHandle = targetDefinition?.config?.inputs?.find(i => i.id === params.sourceHandle);
+
+      // if there is a field with the same name as the target handle, disable it, so the value of the field can not be changed until the connection is deleted
+      if (targetHandle) {
+        const targetField = targetNode.data.nodeDefinition.fields.find(f => f.name === targetHandle.id);
+        if (targetField) {
+          targetField.disabled = true;
+        }
+      }
 
       const edgeColor = sourceHandle?.color || targetHandle?.color || '#999';
 
@@ -259,6 +285,7 @@ function Flow() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           isValidConnection={isValidConnection}
+          onEdgesDelete={onEdgesDelete}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onDragOver={onDragOver}

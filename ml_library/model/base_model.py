@@ -38,6 +38,15 @@ class BaseModel(ABC):
         if hasattr(self.__class__, "_friendly_name"):
             return self.__class__._friendly_name
         return self.__class__.__name__
+    
+    @property
+    def model(self) -> Any:
+        return self._model
+    
+    @model.setter
+    def model(self, value: Any):
+        self._model = value
+
 
     def save_model(self, path: str) -> None:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -112,7 +121,7 @@ class BaseModel(ABC):
 class ModelSaver:
     @node_method(output_label="Model")
     @staticmethod
-    def save(model: BaseModel | None, path: str) -> BaseModel | None:
+    def save(model: BaseModel | Any | None, path: str) -> BaseModel | Any | None:
         try:
             model.save_model(path)
             return model
@@ -128,7 +137,7 @@ class ModelSaver:
 class ModelLoader:
     @node_method(output_label="Model")
     @classmethod
-    def load(cls, path: str) -> BaseModel | None:
+    def load(cls, path: str) -> BaseModel | Any | None:
         try:
             return cls.load_model(path)
         except Exception as e:

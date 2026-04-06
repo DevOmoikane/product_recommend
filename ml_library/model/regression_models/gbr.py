@@ -3,7 +3,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from typing import Any
 import numpy as np
 import pandas as pd
-from ...utils.nodes.node_definition import node
+from ...utils.nodes.node_definition import node, node_method
 
 
 @ModelRegressionRegistry.register("gbr", friendly_name="Gradient Boosting Regressor")
@@ -40,3 +40,21 @@ class ModelGBR(ModelRegression):
 
     def predict(self, X: Any) -> Any:
         return self._model.predict(X)
+
+@node(friendly_name="Gradient Boosting Regressor Trainer", color="#095E0D")
+class ModelGBRTrainer:
+    @node_method(output_label="model")
+    @classmethod
+    def train(cls, data: Any, **kwargs) -> Any:
+        instance = ModelGBR()
+        instance.train(data, **kwargs)
+        return instance.model
+
+@node(friendly_name="Gradient Boosting Regressor Predictor", color="#095E0D")
+class ModelGBRPredictor:
+    @node_method(output_label="prediction")
+    @classmethod
+    def predict(cls, model: Any, X: Any) -> Any:
+        instance = ModelGBR()
+        instance.model = model
+        return instance.predict(X)

@@ -37,36 +37,10 @@ COMMON_TYPE_COLOR_MAP = {
     type(None): "#FFFFFF",
 }
 
-# I dont need to re-create a node, just for sending the node definition, is already done down, so this class should be for creating only the object instances
-def create_instance_from_string(full_path: str):
-    try:
-        module_path, _, class_name = full_path.rpartition('.')
-        module = importlib.import_module(module_path)
-        class_obj = getattr(module, class_name)
-        return class_obj
-    except (ImportError, AttributeError) as e:
-        logerror(f"Error creating instance from string: {e}")
-        return None
-
-class ClassFactory:
-    def __init__(self, _class: str):
-        self._class = _class
-        self.inputs = []
-        self.outputs = []
-        self.fields = []
-        # find the class with the name _class provided and instantiate
-        self._instance = create_instance_from_string(self._class)
-
-    def execute(self, method: str, *args, **kwargs) -> Any:
-        if hasattr(self._instance, method):
-            method_instance = getattr(self._instance, method)
-            if callable(method_instance):
-                result = method_instance(*args, **kwargs)
-                return result
-        else:
-            logerror(f"Method {method} not found in class {self._class}")
-            return None
-
+def type_to_fieldtype(t) -> str:
+    if t in (int, float, str, bool, list, dict, tuple):
+        return "textarea"
+    return None
 
 @singleton
 class _NodeRegistry:
@@ -187,6 +161,14 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
                         "description": "",
                         "connection_count": 1,
                     })
+                    field_type = type_to_fieldtype(arg["type"])
+                    if field_type:
+                        meta["fields"].append({
+                            "name": arg["id"],
+                            "label": arg["label"],
+                            "type": field_type,
+                            "options": [],
+                        })
 
         cls._node_meta = meta
         NodeRegistry._register_node(cls.__name__, meta)
