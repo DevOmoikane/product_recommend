@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -17,6 +18,15 @@ from ml_library.utils.log import *
 from ml_library.utils.nodes.node_definition import NodeRegistry
 
 from ml_library.utils.plugins import load_plugins
+from ml_library.utils.nodes.workflow import (
+    WorkflowStorage,
+    ExecutionStore,
+    WorkflowExecutor,
+    WorkflowDefinitionModel,
+    WorkflowNode,
+    WorkflowConnection,
+    ExecutionStatus
+)
 
 load_plugins("ml_library.data")
 load_plugins("ml_library.model")
@@ -32,6 +42,10 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 config = load_config("config.yaml")
+
+workflow_storage = WorkflowStorage(config)
+execution_store = ExecutionStore()
+active_executors: Dict[str, WorkflowExecutor] = {}
 
 trainer: Optional[Trainer] = None
 trainer_regression: Optional[RegressionTrainer] = None
@@ -348,3 +362,163 @@ async def get_node_definitions():
     except Exception as e:
         logerror(f"Error getting node definitions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class WorkflowNodeRequest(BaseModel):
+    id: str
+    type: str
+    fields: Dict[str, Any] = {}
+    output_name: str = "output"
+
+
+class WorkflowConnectionRequest(BaseModel):
+    from_node: str
+    from_output: str
+    to_node: str
+    to_input: str
+
+
+class WorkflowDefinitionRequest(BaseModel):
+    name: str
+    description: str = ""
+    nodes: List[WorkflowNodeRequest]
+    connections: List[WorkflowConnectionRequest] = []
+
+
+class WorkflowExecutionRequest(BaseModel):
+    workflow: WorkflowDefinitionRequest
+    initial_data: Dict[str, Any] = {}
+
+
+async def run_workflow_async(execution_id: str, workflow: WorkflowDefinitionModel, initial_data: Dict[str, Any]):
+    executor = WorkflowExecutor(workflow, execution_id, execution_store, config)
+    active_executors[execution_id] = executor
+
+    def on_status(status: Dict):
+        asyncio.create_task(workflow_broadcast(execution_id, status))
+
+    executor.execute(initial_data, on_status)
+
+    if execution_id in active_executors:
+        del active_executors[execution_id]
+
+
+async def workflow_broadcast(execution_id: str, status: Dict):
+    for connection in workflow_connections.get(execution_id, []):
+        try:
+            await connection.send_json(status)
+        except Exception:
+            pass
+
+
+workflow_connections: Dict[str, List[WebSocket]] = {}
+
+
+@app.post("/api/workflow/execute")
+async def execute_workflow(request: WorkflowExecutionRequest):
+    try:
+        workflow = WorkflowDefinitionModel(
+            name=request.workflow.name,
+            description=request.workflow.description,
+            nodes=[WorkflowNode(**n.dict()) for n in request.workflow.nodes],
+            connections=[WorkflowConnection(**c.dict()) for c in request.workflow.connections]
+        )
+
+        executor = WorkflowExecutor(workflow, "", execution_store, config)
+        errors = executor.validate()
+        if errors:
+            raiselog(HTTPException(status_code=400, detail="; ".join(errors)), f"Validation errors: {errors}", True)
+
+        execution_id = execution_store.create(workflow, request.initial_data)
+
+        asyncio.create_task(run_workflow_async(execution_id, workflow, request.initial_data))
+
+        return {"execution_id": execution_id, "status": "pending"}
+
+    except HTTPException as e:
+        raiselog(e, f"HTTP error executing workflow: {e}", True)
+    except Exception as e:
+        raiselog(HTTPException(status_code=500, detail=str(e)), f"Error executing workflow: {e}", True)
+
+
+@app.get("/api/workflow/{execution_id}/status")
+async def get_workflow_status(execution_id: str):
+    execution = execution_store.get(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    return execution.to_dict()
+
+
+@app.post("/api/workflow/stop/{execution_id}")
+async def stop_workflow(execution_id: str):
+    executor = active_executors.get(execution_id)
+    if not executor:
+        raise HTTPException(status_code=404, detail="Execution not found or already completed")
+    executor.stop()
+    return {"status": "stopping", "execution_id": execution_id}
+
+
+@app.post("/api/workflow/save")
+async def save_workflow(request: WorkflowDefinitionRequest):
+    try:
+        workflow = WorkflowDefinitionModel(
+            name=request.name,
+            description=request.description,
+            nodes=[WorkflowNode(**n.dict()) for n in request.nodes],
+            connections=[WorkflowConnection(**c.dict()) for c in request.connections]
+        )
+        if workflow_storage.save(workflow):
+            return {"status": "success", "message": f"Workflow '{request.name}' saved"}
+        raise HTTPException(status_code=500, detail="Failed to save workflow")
+    except Exception as e:
+        logerror(f"Error saving workflow: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/workflow/list")
+async def list_workflows():
+    return {"workflows": workflow_storage.list()}
+
+
+@app.get("/api/workflow/{name}")
+async def get_workflow(name: str):
+    workflow = workflow_storage.load(name)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow.to_dict()
+
+
+@app.delete("/api/workflow/{name}")
+async def delete_workflow(name: str):
+    if workflow_storage.delete(name):
+        return {"status": "success", "message": f"Workflow '{name}' deleted"}
+    raise HTTPException(status_code=404, detail="Workflow not found")
+
+
+@app.websocket("/ws/workflow/{execution_id}")
+async def workflow_websocket(websocket: WebSocket, execution_id: str):
+    await websocket.accept()
+
+    if execution_id not in workflow_connections:
+        workflow_connections[execution_id] = []
+    workflow_connections[execution_id].append(websocket)
+
+    try:
+        execution = execution_store.get(execution_id)
+        if execution:
+            await websocket.send_json({
+                "type": "initial_status",
+                "data": execution.to_dict()
+            })
+
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if execution_id in workflow_connections:
+            workflow_connections[execution_id] = [c for c in workflow_connections[execution_id] if c != websocket]
+            if not workflow_connections[execution_id]:
+                del workflow_connections[execution_id]

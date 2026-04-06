@@ -1,0 +1,19 @@
+meta {
+  name: Worflow status
+  type: ws
+  seq: 14
+}
+
+ws {
+  url: {{server}}/ws/workflow/{{execution_id}}
+  body: ws
+  auth: inherit
+}
+
+body:ws {
+  name: message 1
+  type: json
+  content: '''
+    {}
+  '''
+}

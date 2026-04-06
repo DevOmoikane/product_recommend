@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import Optional, Any
 import pprint
 
@@ -6,11 +7,13 @@ import pprint
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO)
 
-def raiselog(exception: Exception, message: Optional[str] = None):
+def raiselog(exception: Exception, message: Optional[str] = None, print_traceback: bool = False):
     log_message = f"{message}: {str(exception)}" if message else str(exception)
     logger.error(log_message)
     # output stack trace for the exception
-    logger.exception(exception)    
+    logger.exception(exception)
+    if print_traceback:
+        logger.error(traceback.format_exc())
     raise exception
 
 def logerror(message: str):

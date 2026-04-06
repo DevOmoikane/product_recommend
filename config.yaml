@@ -56,3 +56,9 @@ persistence:
   data_dir: "./data"
   default_model: "./models/model.pkl"
   repurchase_model: "./models/model_repurchase.pkl"
+
+workflows:
+  storage_path: "./workflows/"
+  execution:
+    stop_grace_period_seconds: 30
+    force_kill_after_seconds: 60

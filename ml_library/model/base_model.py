@@ -123,7 +123,14 @@ class ModelSaver:
     @staticmethod
     def save(model: BaseModel | Any | None, path: str) -> BaseModel | Any | None:
         try:
-            model.save_model(path)
+            if isinstance(model, BaseModel):
+                model.save_model(path)
+            else:
+                data = {
+                    "class": type(model).__name__,
+                    "model": model,
+                }
+                joblib.dump(data, path)
             return model
         except Exception:
             return None
