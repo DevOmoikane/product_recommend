@@ -26,6 +26,10 @@ export const stopWorkflow = async (executionId) => {
   });
 
   if (!response.ok) {
+    if (response.status === 404) {
+      // just remove the ws connection and consider it stopped
+      return { success: true };
+    }
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 

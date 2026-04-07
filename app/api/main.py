@@ -513,10 +513,14 @@ async def workflow_websocket(websocket: WebSocket, execution_id: str):
                 "data": execution.to_dict()
             })
 
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
+        while execution.status not in [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED, ExecutionStatus.STOPPED]:
+            await asyncio.sleep(1)
+            logobject(execution, f"Execution {execution_id} current status: {execution.status}")
+        logobject(execution, f"Execution {execution_id} final status: {execution.status}")
+        await websocket.send_json({
+            "type": "execution_completed",
+            "data": execution.to_dict()
+        })
     except WebSocketDisconnect:
         pass
     finally:
