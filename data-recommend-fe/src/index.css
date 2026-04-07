@@ -350,3 +350,213 @@ code {
 .react-flow__controls-button:hover {
   background: var(--code-bg);
 }
+
+/* Execution Panel */
+.execution-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 380px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+
+.execution-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.execution-panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.panel-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text);
+  padding: 4px;
+}
+
+.panel-close-btn:hover {
+  color: var(--text-h);
+}
+
+.execution-panel-content {
+  padding: 16px;
+}
+
+.execution-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.status-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+  font-weight: 500;
+}
+
+.execution-id {
+  font-size: 11px;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.execution-logs {
+  height: 120px;
+  overflow-y: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.log-empty {
+  color: var(--text);
+  font-style: italic;
+}
+
+.log-entry {
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-entry.info {
+  color: var(--text);
+}
+
+.log-entry.success {
+  color: #10b981;
+}
+
+.log-entry.error {
+  color: #ef4444;
+}
+
+.execution-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.execution-actions .action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.run-btn {
+  background: #10b981;
+  color: white;
+}
+
+.run-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.stop-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.stop-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.panel-btn {
+  background: var(--code-bg);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+}
+
+/* Node Status Indicators */
+.base-node.status-running {
+  border-color: #f59e0b !important;
+}
+
+.base-node.status-completed {
+  border-color: #10b981 !important;
+}
+
+.base-node.status-failed {
+  border-color: #ef4444 !important;
+}
+
+.node-status-indicator {
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.node-status-indicator.running {
+  color: #f59e0b;
+  animation: pulse 1s infinite;
+}
+
+.node-status-indicator.completed {
+  color: #10b981;
+}
+
+.node-status-indicator.failed {
+  color: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Node Results Display */
+.node-result {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+  min-width: 80px;
+  max-width: 120px;
+}
+
+.node-result .result-label {
+  font-size: 9px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.node-result .result-value {
+  font-size: 10px;
+  color: var(--text-h);
+  font-family: var(--mono);
+  background: var(--code-bg);
+  padding: 2px 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -16,9 +16,12 @@ import 'font-awesome/css/font-awesome.css';
 
 import Sidebar from './components/Sidebar';
 import useWorkflowPersistence from './hooks/useWorkflowPersistence';
+import ExecutionPanel from './components/ExecutionPanel';
 
 import BaseNode from './components/nodes/BaseNode.jsx';
 import { COMPATIBLE_CONNECTIONS } from './utils/nodeConfigs';
+import { executeWorkflow, stopWorkflow, connectToExecution } from './services/workflowApi';
+import { convertToBackendFormat } from './utils/workflowConverter';
 
 const CustomEdge = memo(({
   id,
@@ -91,7 +94,17 @@ function Flow() {
   const [nodeDefinitions, setNodeDefinitions] = useState([]);
   const [nodeTypes, setNodeTypes] = useState({});
 
+  const [executionState, setExecutionState] = useState({
+    isOpen: false,
+    executionId: null,
+    status: 'idle',
+    logs: [],
+    nodeStatuses: {},
+    nodeResults: {},
+  });
+
   const { saveWorkflow, loadWorkflow } = useWorkflowPersistence();
+  const wsRef = useRef(null);
 
   useEffect(() => {
     const fetchNodeDefinitions = async () => {
@@ -105,7 +118,7 @@ function Flow() {
           data.forEach((nodeDefinition) => {
             const [key, _] = Object.entries(nodeDefinition)[0];
             _nodeTypes[key] = (props) => (
-              <BaseNode {...props} type={key} />
+              <BaseNode {...props} type={key} executionState={executionState} />
             );
           });
         }
@@ -115,6 +128,162 @@ function Flow() {
       }
     };
     fetchNodeDefinitions();
+  }, []);
+
+  const addLog = useCallback((message, type = 'info') => {
+    setExecutionState(prev => ({
+      ...prev,
+      logs: [...prev.logs, { message, type, timestamp: new Date().toLocaleTimeString() }]
+    }));
+  }, []);
+
+  const handleWebSocketMessage = useCallback((message) => {
+    const msgType = message.type || message.message_type;
+    
+    switch (msgType) {
+      case 'initial_status':
+        setExecutionState(prev => ({
+          ...prev,
+          status: message.status || 'running',
+        }));
+        addLog(`Initial status: ${message.status}`, 'info');
+        break;
+        
+      case 'node_started':
+        setExecutionState(prev => ({
+          ...prev,
+          nodeStatuses: {
+            ...prev.nodeStatuses,
+            [message.node_id]: { status: 'running', output: message.output },
+          },
+        }));
+        addLog(`Node started: ${message.node_id}`, 'info');
+        break;
+        
+      case 'node_completed':
+        setExecutionState(prev => ({
+          ...prev,
+          nodeStatuses: {
+            ...prev.nodeStatuses,
+            [message.node_id]: { status: 'completed', output: message.output },
+          },
+          nodeResults: {
+            ...prev.nodeResults,
+            [message.node_id]: message.output || {},
+          },
+        }));
+        addLog(`Node completed: ${message.node_id}`, 'success');
+        break;
+        
+      case 'node_failed':
+        setExecutionState(prev => ({
+          ...prev,
+          nodeStatuses: {
+            ...prev.nodeStatuses,
+            [message.node_id]: { status: 'failed', error: message.error },
+          },
+        }));
+        addLog(`Node failed: ${message.node_id} - ${message.error}`, 'error');
+        break;
+        
+      case 'execution_completed':
+        setExecutionState(prev => ({
+          ...prev,
+          status: 'completed',
+          nodeResults: message.results || prev.nodeResults,
+        }));
+        addLog('Execution completed', 'success');
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+        break;
+        
+      case 'execution_failed':
+        setExecutionState(prev => ({
+          ...prev,
+          status: 'failed',
+        }));
+        addLog(`Execution failed: ${message.error}`, 'error');
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+        break;
+        
+      default:
+        addLog(`Unknown message: ${JSON.stringify(message)}`, 'info');
+    }
+  }, [addLog]);
+
+  const handleRunWorkflow = useCallback(async () => {
+    try {
+      const workflowData = convertToBackendFormat(nodes, edges, 'workflow', 'Executed from UI');
+      
+      const result = await executeWorkflow(workflowData);
+      
+      setExecutionState(prev => ({
+        ...prev,
+        isOpen: true,
+        executionId: result.execution_id,
+        status: result.status || 'running',
+        logs: [{ message: `Execution started: ${result.execution_id}`, type: 'info' }],
+        nodeStatuses: {},
+        nodeResults: {},
+      }));
+
+      addLog(`Execution started: ${result.execution_id}`, 'info');
+
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+
+      wsRef.current = connectToExecution(
+        result.execution_id,
+        (message) => {
+          handleWebSocketMessage(message);
+        },
+        (error) => {
+          addLog(`WebSocket error: ${error}`, 'error');
+        },
+        () => {
+          addLog('WebSocket connection closed', 'info');
+        }
+      );
+    } catch (error) {
+      addLog(`Failed to start execution: ${error.message}`, 'error');
+      setExecutionState(prev => ({
+        ...prev,
+        status: 'failed',
+      }));
+    }
+  }, [nodes, edges, addLog, handleWebSocketMessage]);
+
+  const handleStopWorkflow = useCallback(async () => {
+    if (!executionState.executionId) return;
+    
+    try {
+      await stopWorkflow(executionState.executionId);
+      addLog('Stopping execution...', 'info');
+      setExecutionState(prev => ({
+        ...prev,
+        status: 'stopping',
+      }));
+      
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    } catch (error) {
+      addLog(`Failed to stop execution: ${error.message}`, 'error');
+    }
+  }, [executionState.executionId, addLog]);
+
+  const toggleExecutionPanel = useCallback(() => {
+    setExecutionState(prev => ({
+      ...prev,
+      isOpen: !prev.isOpen,
+    }));
   }, []);
 
   const onNodesChange = useCallback(
@@ -275,7 +444,11 @@ function Flow() {
       <Sidebar 
         onSave={saveWorkflow} 
         onLoad={() => loadWorkflow(setNodes, setEdges)} 
-        nodeDefinitions={nodeDefinitions} 
+        nodeDefinitions={nodeDefinitions}
+        onRun={handleRunWorkflow}
+        onStop={handleStopWorkflow}
+        isRunning={executionState.status === 'running'}
+        onTogglePanel={toggleExecutionPanel}
       />
       <div ref={reactFlowWrapper} style={{ flex: 1, height: '100%' }}>
         <ReactFlow
@@ -296,6 +469,16 @@ function Flow() {
           <MiniMap nodeColor="#fff" pannable zoomable />
         </ReactFlow>
       </div>
+
+      <ExecutionPanel
+        isOpen={executionState.isOpen}
+        onClose={toggleExecutionPanel}
+        executionId={executionState.executionId}
+        status={executionState.status}
+        logs={executionState.logs}
+        onRun={handleRunWorkflow}
+        onStop={handleStopWorkflow}
+      />
     </div>
   );
 }

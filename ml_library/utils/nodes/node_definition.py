@@ -77,6 +77,9 @@ def humanize(name: str) -> str:
     words = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)', name)
     return ' '.join(word.capitalize() for word in words)
 
+def snake_case(name: str) -> str:
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 def serialize_type(t):
     if t is None:
@@ -135,7 +138,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
             _return_type = get_type_hints(getattr(cls, function)).get("return", None)
         for attr_name, attr in cls.__dict__.items():
             if hasattr(attr, "_node_method"):
-                _id = attr_name
+                _id = snake_case(attr._node_method["friendly_name"])
                 _function_call = attr._node_method["id"]
                 _return_type = attr._node_method["return"]
                 _label = attr._node_method["friendly_name"]
@@ -144,7 +147,8 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
         if _function_call is not None and _return_type is not None:
             _type_color = NodeRegistry._register_type(_return_type)
             meta["outputs"].append({
-                "id": _id or _function_call,
+                "id": _id,
+                "function": _function_call,
                 "label": _label or humanize(_function_call),
                 "type": serialize_type(_return_type),
                 "color": _type_color,

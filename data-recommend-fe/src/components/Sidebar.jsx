@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { NODE_TYPES, NODE_CONFIG } from '../utils/nodeConfigs';
 
-export default function Sidebar({ onSave, onLoad, nodeDefinitions }) {
+export default function Sidebar({ onSave, onLoad, nodeDefinitions, onRun, onStop, isRunning, onTogglePanel }) {
   const onDragStart = useCallback((event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -36,11 +36,20 @@ export default function Sidebar({ onSave, onLoad, nodeDefinitions }) {
       </div>
 
       <div className="sidebar-actions">
+        <button onClick={onRun} className="action-btn run-btn" disabled={isRunning}>
+          <i className="fa fa-play"></i> Run
+        </button>
+        <button onClick={onStop} className="action-btn stop-btn" disabled={!isRunning}>
+          <i className="fa fa-stop"></i> Stop
+        </button>
+        <button onClick={onTogglePanel} className="action-btn panel-btn">
+          <i className="fa fa-terminal"></i> Logs
+        </button>
         <button onClick={onSave} className="action-btn save-btn">
-          Save Workflow
+          Save
         </button>
         <button onClick={onLoad} className="action-btn load-btn">
-          Load Workflow
+          Load
         </button>
       </div>
     </aside>

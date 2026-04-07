@@ -65,7 +65,7 @@ class WorkflowNode:
     id: str
     type: str
     fields: Dict[str, Any] = field(default_factory=dict)
-    output_name: str = "output"
+    processing_function: str = "output"
 
 
 @dataclass
@@ -93,7 +93,7 @@ class WorkflowDefinitionModel:
                     "id": n.id,
                     "type": n.type,
                     "fields": n.fields,
-                    "output_name": n.output_name
+                    "processing_function": n.processing_function
                 }
                 for n in self.nodes
             ],
@@ -301,8 +301,8 @@ class WorkflowExecutor:
             if cls is None:
                 errors.append(f"Node '{node.id}': Cannot instantiate class '{node.type}'")
                 continue
-            if not hasattr(cls, node.output_name):
-                errors.append(f"Node '{node.id}': Output '{node.output_name}' not found in class")
+            if not hasattr(cls, node.processing_function):
+                errors.append(f"Node '{node.id}': Processing function '{node.processing_function}' not found in class")
 
         for conn in self.workflow.connections:
             if conn.from_node not in node_map:
@@ -439,23 +439,23 @@ class WorkflowExecutor:
                 cls = create_instance_from_string(node.type)
                 inputs = self._resolve_inputs(node, results)
 
-                method = getattr(cls, node.output_name)
+                method = getattr(cls, node.processing_function)
                 output = method(**inputs)
 
-                results[node.id] = {node.output_name: output}
+                results[node.id] = {node.processing_function: output}
 
                 self._execution_store.update_node_status(
                     self.execution_id,
                     node.id,
                     NodeStatus.COMPLETED,
-                    {node.output_name: output}
+                    {node.processing_function: output}
                 )
 
                 on_status({
                     "type": "node_completed",
                     "execution_id": self.execution_id,
                     "node_id": node.id,
-                    "result": {node.output_name: str(output)[:200]}
+                    "result": {node.processing_function: str(output)[:200]}
                 })
 
             except Exception as e:

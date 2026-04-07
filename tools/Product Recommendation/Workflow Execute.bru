@@ -16,8 +16,8 @@ body:json {
       "name": "worflow_name",
       "description": "aaaa",
       "nodes": [
-        {"id":"ModelSaver001", "type":"ml_library.model.base_model.ModelSaver", "fields":{"path":"file2.kk", "model":"jjjjjj"}, "output_name":"save"},
-        {"id":"ModelLoader001", "type":"ml_library.model.base_model.ModelLoader", "fields":{"path":"file.kk"}, "output_name":"load"}
+        {"id":"ModelSaver001", "type":"ml_library.model.base_model.ModelSaver", "fields":{"path":"file2.kk", "model":"jjjjjj"}, "processing_function":"save"},
+        {"id":"ModelLoader001", "type":"ml_library.model.base_model.ModelLoader", "fields":{"path":"file.kk"}, "processing_function":"load"}
       ],
       "connections": [{"to_node":"ModelSaver001", "to_input":"model", "from_node":"ModelLoader001", "from_output":"model"}]
     },

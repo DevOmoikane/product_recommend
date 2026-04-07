@@ -19,9 +19,16 @@ const validateNode = (node, nodeDefinition) => {
   };
 };
 
-function BaseNode({ id, type, data, selected }) {
+function BaseNode({ id, type, data, selected, executionState }) {
   const { setNodes } = useReactFlow();
   const nodeDefinition = data.nodeDefinition;
+
+  const getNodeStatus = () => {
+    if (!executionState || !executionState.nodeStatuses) return null;
+    return executionState.nodeStatuses[id];
+  };
+
+  const nodeStatus = getNodeStatus();
 
   const handleConfigChange = useCallback((fieldName, value) => {
     setNodes((nodes) =>
@@ -103,6 +110,14 @@ function BaseNode({ id, type, data, selected }) {
           style={{ background: handle.color, borderColor: handle.color }}
           label={handle.label}
         />
+        {!isInput && executionState && executionState.nodeResults && executionState.nodeResults[id] && (
+          <div className="node-result">
+            <span className="result-label">{handle.id}:</span>
+            <span className="result-value">
+              {String(executionState.nodeResults[id][handle.id] ?? '').slice(0, 20)}
+            </span>
+          </div>
+        )}
       </div>
     ));
   };
@@ -114,14 +129,29 @@ function BaseNode({ id, type, data, selected }) {
   const contentHeight = Math.max(nodeDefinition.fields.length * fieldHeight, handlesHeight);
   const totalHeight = baseHeight + contentHeight;
 
+  const getStatusClass = () => {
+    if (!nodeStatus) return '';
+    switch (nodeStatus.status) {
+      case 'running': return 'status-running';
+      case 'completed': return 'status-completed';
+      case 'failed': return 'status-failed';
+      default: return '';
+    }
+  };
+
   return (
     <div
-      className={`base-node ${selected ? 'selected' : ''} ${data.isValid ? 'valid' : 'invalid'}`}
+      className={`base-node ${selected ? 'selected' : ''} ${data.isValid ? 'valid' : 'invalid'} ${getStatusClass()}`}
       style={{ borderColor: nodeDefinition.color, height: totalHeight }}
     >
       {renderHandles(nodeDefinition.inputs, true)}
 
       <div className="node-header" style={{ backgroundColor: nodeDefinition.color }}>
+        {nodeStatus && (
+          <span className={`node-status-indicator ${nodeStatus.status}`}>
+            <i className={`fa ${nodeStatus.status === 'running' ? 'fa-spinner fa-spin' : nodeStatus.status === 'completed' ? 'fa-check' : nodeStatus.status === 'failed' ? 'fa-times' : 'fa-circle'}`}></i>
+          </span>
+        )}
         <span className="node-icon"><i className={nodeDefinition.icon}></i></span>
         <span className="node-label">{data.label}</span>
       </div>

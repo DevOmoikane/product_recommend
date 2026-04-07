@@ -7,7 +7,7 @@ from typing import Optional, Dict, List, Any
 import logging
 import asyncio
 
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 from app.trainer import Trainer
 from app.regression_trainer import RegressionTrainer
@@ -368,7 +368,7 @@ class WorkflowNodeRequest(BaseModel):
     id: str
     type: str
     fields: Dict[str, Any] = {}
-    output_name: str = "output"
+    processing_function: str = "output"
 
 
 class WorkflowConnectionRequest(BaseModel):
@@ -417,6 +417,8 @@ workflow_connections: Dict[str, List[WebSocket]] = {}
 @app.post("/api/workflow/execute")
 async def execute_workflow(request: WorkflowExecutionRequest):
     try:
+        loginfo(f"Received workflow execution request: {request.workflow.name}")
+        logobject(request, "workflow execution request details")
         workflow = WorkflowDefinitionModel(
             name=request.workflow.name,
             description=request.workflow.description,
