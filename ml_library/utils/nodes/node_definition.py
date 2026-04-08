@@ -96,7 +96,7 @@ class NodeInputMode(Enum):
     REQUIRED = 1
     HIDDEN = 2
 
-def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", function: str = ""):
+def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", category: str = "", function: str = "", begin_node: bool = False, end_node: bool = False):
     def decorator(cls):
         global NodeRegistry
         meta = {
@@ -105,6 +105,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
             "icon": icon,
             "color": color,
             "description": description,
+            "category": category,
             "inputs": [],
             "outputs": [],
             "fields": []
@@ -146,25 +147,27 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
                 _args = attr._node_method["args"]
         if _function_call is not None and _return_type is not None:
             _type_color = NodeRegistry._register_type(_return_type)
-            meta["outputs"].append({
-                "id": _id,
-                "function": _function_call,
-                "label": _label or humanize(_function_call),
-                "type": serialize_type(_return_type),
-                "color": _type_color,
-                "description": _description or "",
-            })
+            if not end_node:
+                meta["outputs"].append({
+                    "id": _id,
+                    "function": _function_call,
+                    "label": _label or humanize(_function_call),
+                    "type": serialize_type(_return_type),
+                    "color": _type_color,
+                    "description": _description or "",
+                })
             if _args is not None and len(_args)>0:
                 for arg in _args:
                     _arg_color = NodeRegistry._register_type(arg["type"])
-                    meta["inputs"].append({
-                        "id": arg["id"],
-                        "label": arg["label"],
-                        "type": serialize_type(arg["type"]),
-                        "color": _arg_color,
-                        "description": "",
-                        "connection_count": 1,
-                    })
+                    if not begin_node:
+                        meta["inputs"].append({
+                            "id": arg["id"],
+                            "label": arg["label"],
+                            "type": serialize_type(arg["type"]),
+                            "color": _arg_color,
+                            "description": "",
+                            "connection_count": 1,
+                        })
                     field_type = type_to_fieldtype(arg["type"])
                     if field_type:
                         meta["fields"].append({

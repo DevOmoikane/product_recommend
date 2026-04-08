@@ -30,6 +30,7 @@ from ml_library.utils.nodes.workflow import (
 
 load_plugins("ml_library.data")
 load_plugins("ml_library.model")
+load_plugins("ml_library.utils.nodes.basic")
 
 app = FastAPI(title="Product Recommendation API", version="1.0.0")
 app.add_middleware(

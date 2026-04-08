@@ -4,13 +4,32 @@ from sqlalchemy.pool import NullPool
 from typing import Optional, Dict, Any
 from .abstract_data_connector import AbstractDataConnector
 from ...utils.log import *
+from ...utils.nodes.node_definition import node, node_method
 
 
+@node(
+    friendly_name="PostgreSQL Connector",
+    description="Connects to a PostgreSQL database and retrieves data using provided queries.",
+    icon="fa fa-database",
+    color="#336791"
+)
 class PostgreSQLConnector(AbstractDataConnector):
     def __init__(self, uri: str, queries: Optional[Dict[str, str]] = None):
         self._uri = uri
         self._engine: Optional[Engine] = None
         self._queries = queries or {}
+
+    @node_method(output_label="data")
+    @classmethod
+    def get_data(cls, uri: str, queries: Optional[Dict[str, str]] = None) -> Dict[str, pd.DataFrame]:
+        connector = cls(uri, queries)
+        data = {
+            "interactions": connector.get_interactions(),
+            "items": connector.get_items(),
+            "users": connector.get_users()
+        }
+        connector.disconnect()
+        return data
 
     def connect(self) -> Engine:
         if self._engine is None:
