@@ -74,6 +74,7 @@ function BaseNode({ id, type, data, selected, executionState }) {
           onChange={(e) => handleConfigChange(field.name, e.target.value)}
           className="node-textarea"
           placeholder={field.label}
+          defaultValue={field.default_value}
         />
       );
     }
@@ -85,6 +86,7 @@ function BaseNode({ id, type, data, selected, executionState }) {
         onChange={(e) => handleConfigChange(field.name, e.target.value)}
         className="node-input"
         placeholder={field.label}
+        defaultValue={field.default_value}
       />
     );
   };

@@ -4,14 +4,24 @@ from .adapter.abstract_data_connector import AbstractDataConnector
 from .adapter import create_connector
 from ..utils.log import *
 from ..utils.config import load_config
+from ..utils.nodes.node_definition import node, node_method
+import pandas as pd
 
 
+@node(friendly_name="Data Source", category="Data", color="#336791")
 class DataSource:
     def __init__(self, uri: Optional[str] = None, config_path: Optional[str] = None):
         self._uri = uri
         self._config: Dict[str, Any] = {}
         self._connector: Optional[AbstractDataConnector] = None
         self._config_path = config_path or "config.yaml"
+
+    @node_method(output_label="data")
+    @classmethod
+    def data_from_uri(cls, uri: str, config_path: str = "config.yaml") -> pd.DataFrame:
+        instance = cls(uri=uri, config_path=config_path)
+        connector = instance.get_connector()
+        return connector.get_interactions()
 
     def _create_data_connector(self) -> AbstractDataConnector:
         self._parse_uri()

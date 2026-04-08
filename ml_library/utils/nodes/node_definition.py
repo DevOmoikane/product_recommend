@@ -174,6 +174,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
                             "name": arg["id"],
                             "label": arg["label"],
                             "type": field_type,
+                            "default_value": arg["default"],
                             "options": [],
                         })
 
