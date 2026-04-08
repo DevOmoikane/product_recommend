@@ -42,17 +42,18 @@ export default function Sidebar({ onSave, onLoad, nodeDefinitions, onRun, onStop
   const groupedNodes = useMemo(() => groupNodesByCategory(nodeDefinitions), [nodeDefinitions]);
 
   const handleToggleCategory = useCallback((category) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
+    setExpandedCategories(prev => {
+      const current = prev[category];
+      return {
+        ...prev,
+        [category]: current === undefined ? false : !current
+      };
+    });
   }, []);
 
   const isExpanded = (category) => {
-    if (expandedCategories[category] === undefined) {
-      return true;
-    }
-    return expandedCategories[category];
+    const val = expandedCategories[category];
+    return val === undefined ? true : val;
   };
 
   return (
