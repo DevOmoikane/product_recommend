@@ -51,7 +51,7 @@ function BaseNode({ id, type, data, selected, executionState }) {
   }, [id, setNodes, nodeDefinition]);
 
   const renderField = (field) => {
-    const value = data.config[field.name] || '';
+    const value = field.default_value || data.config[field.name] || '';
     
     if (field.type === 'select') {
       return (
@@ -74,7 +74,6 @@ function BaseNode({ id, type, data, selected, executionState }) {
           onChange={(e) => handleConfigChange(field.name, e.target.value)}
           className="node-textarea"
           placeholder={field.label}
-          defaultValue={field.default_value}
         />
       );
     }
@@ -86,7 +85,6 @@ function BaseNode({ id, type, data, selected, executionState }) {
         onChange={(e) => handleConfigChange(field.name, e.target.value)}
         className="node-input"
         placeholder={field.label}
-        defaultValue={field.default_value}
       />
     );
   };
