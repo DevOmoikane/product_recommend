@@ -10,6 +10,7 @@ from ...utils.nodes.node_definition import node, node_method
 @node(
     friendly_name="PostgreSQL Connector",
     description="Connects to a PostgreSQL database and retrieves data using provided queries.",
+    category="Data Connectors",
     icon="fa fa-database",
     color="#336791"
 )

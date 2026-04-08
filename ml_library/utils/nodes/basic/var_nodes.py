@@ -5,6 +5,7 @@ from ..node_definition import node, node_method
 @node(
     friendly_name="String Node",
     description="A node that holds a string value.",
+    category="Basic",
     icon="fa fa-font",
     color="#FF5733",
     begin_node=True
@@ -20,6 +21,7 @@ class StringNode:
 @node(
     friendly_name="Integer Node",
     description="A node that holds an integer value.",
+    category="Basic",
     icon="fa fa-hashtag",
     color="#33C1FF",
     begin_node=True

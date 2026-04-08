@@ -10,6 +10,7 @@ from ...utils.nodes.node_definition import node
 @node(
     friendly_name="Random Forest Regressor",
     description="Random Forest Regressor",
+    category="Models",
     icon="fa fa-tree",
     color="#5E0953"
 )

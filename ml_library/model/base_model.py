@@ -115,6 +115,7 @@ class BaseModel(ABC):
 @node(
     friendly_name="Model Saver",
     description="Save a generated model to disk.",
+    category="Models",
     icon="fa fa-save",
     color="#DDE00F"
 )
@@ -138,6 +139,7 @@ class ModelSaver:
 @node(
     friendly_name="Model Loader",
     description="Load a model from disk.",
+    category="Models",
     icon="fa fa-save",
     color="#DDE00F"
 )

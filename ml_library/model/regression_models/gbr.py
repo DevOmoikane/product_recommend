@@ -10,6 +10,7 @@ from ...utils.nodes.node_definition import node, node_method
 @node(
     friendly_name="Gradient Boosting Regressor",
     description="Gradient Boosting Regressor",
+    category="Models",
     icon="fa fa-tree",
     color="#095E0D"
 )
@@ -41,7 +42,7 @@ class ModelGBR(ModelRegression):
     def predict(self, X: Any) -> Any:
         return self._model.predict(X)
 
-@node(friendly_name="Gradient Boosting Regressor Trainer", color="#095E0D")
+@node(friendly_name="Gradient Boosting Regressor Trainer", category="Models", color="#095E0D")
 class ModelGBRTrainer:
     @node_method(output_label="model")
     @classmethod
@@ -50,7 +51,7 @@ class ModelGBRTrainer:
         instance.train(data, **kwargs)
         return instance.model
 
-@node(friendly_name="Gradient Boosting Regressor Predictor", color="#095E0D")
+@node(friendly_name="Gradient Boosting Regressor Predictor", category="Models", color="#095E0D")
 class ModelGBRPredictor:
     @node_method(output_label="prediction")
     @classmethod
