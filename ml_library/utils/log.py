@@ -2,6 +2,7 @@ import logging
 import traceback
 from typing import Optional, Any
 import pprint
+from functools import wraps
 
 # logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -34,3 +35,11 @@ def logcritical(message: str):
 def logobject(obj: Any, message: Optional[str] = None):
     log_message = f"{message}: {pprint.pformat(obj)}" if message else pprint.pformat(obj)
     logger.info(log_message)
+
+def debug_return(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        logger.info(f"Function {func.__name__} returned: {pprint.pformat(result)}")
+        return result
+    return wrapper

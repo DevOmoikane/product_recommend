@@ -32,3 +32,17 @@ class IntegerNode:
     def get_value(cls, value: int) -> int:
         return value
     
+
+@node(
+    friendly_name="Pair Node",
+    description="A node that holds a key-value pair.",
+    category="Basic",
+    icon="fa fa-key",
+    color="#FF33A1",
+    begin_node=True
+)
+class PairNode:
+    @node_method(output_label="pair")
+    @classmethod
+    def get_value(cls, key: str, value: str) -> Dict[str, str]:
+        return {key: value}

@@ -3,7 +3,7 @@ import functools
 import inspect
 import importlib
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args, get_origin
 from enum import Enum
 import re
 import random
@@ -86,11 +86,44 @@ def serialize_type(t):
         return []
     
     origin = get_origin(t)
+    if origin is Optional:
+        args = get_args(t)
+        return [getattr(arg, "__name__", str(arg)) for arg in args if arg is not type(None)]
     if origin is Union or origin is UnionType:
         args = get_args(t)
         return [getattr(arg, "__name__", str(arg)) for arg in args if arg is not type(None)]
     
     return [getattr(t, "__name__", str(t))]
+
+def is_list_type(t):
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return any(is_list_type(arg) for arg in args if arg is not type(None))
+    return get_origin(t) is list or t is list or get_origin(t) is List or t is List
+
+def is_sequence_type(t):
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return any(is_sequence_type(arg) for arg in args if arg is not type(None))
+    origin = get_origin(t) or t
+    return origin in (list, List, tuple, Tuple, set)
+
+def get_inner_type(t):
+    return get_args(t)
+
+@debug_return
+def get_connection_count(t):
+    print(f"Type of origin => {get_origin(t)} {get_args(t)}")
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return max(get_connection_count(arg) for arg in args if arg is not type(None))
+    if is_list_type(t):
+        return 100
+    if is_sequence_type(t):
+        return 100
+    if get_origin(t) is dict or t is dict or get_origin(t) is Dict or t is Dict:
+        return 20
+    return 1
 
 class NodeInputMode(Enum):
     REQUIRED = 1
@@ -159,6 +192,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
             if _args is not None and len(_args)>0:
                 for arg in _args:
                     _arg_color = NodeRegistry._register_type(arg["type"])
+                    print(f"{arg['id']} -> Type ====> {serialize_type(arg['type'])}")
                     if not begin_node:
                         meta["inputs"].append({
                             "id": arg["id"],
@@ -166,7 +200,7 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
                             "type": serialize_type(arg["type"]),
                             "color": _arg_color,
                             "description": "",
-                            "connection_count": 1,
+                            "connection_count": get_connection_count(arg["type"]),
                         })
                     field_type = type_to_fieldtype(arg["type"])
                     if field_type:

@@ -23,13 +23,15 @@ class PostgreSQLConnector(AbstractDataConnector):
     @node_method(output_label="data")
     @classmethod
     def get_data(cls, uri: str, queries: Optional[Dict[str, str]] = None) -> Dict[str, pd.DataFrame]:
-        connector = cls(uri, queries)
-        data = {
-            "interactions": connector.get_interactions(),
-            "items": connector.get_items(),
-            "users": connector.get_users()
-        }
-        connector.disconnect()
+        logobject(queries, "get_data => queries = ")
+        # connector = cls(uri, queries)
+        # data = {
+        #     "interactions": connector.get_interactions(),
+        #     "items": connector.get_items(),
+        #     "users": connector.get_users()
+        # }
+        # connector.disconnect()
+        data = {}
         return data
 
     def connect(self) -> Engine:
