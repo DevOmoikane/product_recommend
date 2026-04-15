@@ -3,7 +3,7 @@ import functools
 import inspect
 import importlib
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args, get_origin
+from typing import Any, Callable, Dict, List, Optional, Set as SetType, Tuple, Type, Union, TYPE_CHECKING, get_type_hints, get_origin, get_args, get_origin
 from enum import Enum
 import re
 import random
@@ -111,9 +111,41 @@ def is_sequence_type(t):
 def get_inner_type(t):
     return get_args(t)
 
-@debug_return
+def is_dict_type(t):
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return any(is_dict_type(arg) for arg in args if arg is not type(None))
+    return get_origin(t) is dict or t is dict or get_origin(t) is Dict or t is Dict
+
+def is_set_type(t):
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return any(is_set_type(arg) for arg in args if arg is not type(None))
+    origin = get_origin(t) or t
+    return origin in (set, SetType)
+
+def is_tuple_type(t):
+    if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
+        args = get_args(t)
+        return any(is_tuple_type(arg) for arg in args if arg is not type(None))
+    origin = get_origin(t) or t
+    return origin in (tuple, tuple)
+
+
+MERGE_STRATEGIES = {"update", "append", "extend", "union", "first", "last"}
+
+def auto_detect_merge_strategy(t) -> str:
+    if is_dict_type(t):
+        return "update"
+    if is_list_type(t):
+        return "append"
+    if is_tuple_type(t):
+        return "extend"
+    if is_set_type(t):
+        return "union"
+    return "last"
+
 def get_connection_count(t):
-    print(f"Type of origin => {get_origin(t)} {get_args(t)}")
     if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
         args = get_args(t)
         return max(get_connection_count(arg) for arg in args if arg is not type(None))
@@ -129,7 +161,7 @@ class NodeInputMode(Enum):
     REQUIRED = 1
     HIDDEN = 2
 
-def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", category: str = "", function: str = "", begin_node: bool = False, end_node: bool = False):
+def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", category: str = "", function: str = "", begin_node: bool = False, end_node: bool = False, input_merge: Dict[str, str] = None):
     def decorator(cls):
         global NodeRegistry
         meta = {
@@ -141,7 +173,8 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
             "category": category,
             "inputs": [],
             "outputs": [],
-            "fields": []
+            "fields": [],
+            "input_merge": input_merge or {}
         }
 
         # check if class has INPUT_TYPES method
@@ -192,7 +225,6 @@ def node(friendly_name: str | None = None, color: str = "", description: str = "
             if _args is not None and len(_args)>0:
                 for arg in _args:
                     _arg_color = NodeRegistry._register_type(arg["type"])
-                    print(f"{arg['id']} -> Type ====> {serialize_type(arg['type'])}")
                     if not begin_node:
                         meta["inputs"].append({
                             "id": arg["id"],

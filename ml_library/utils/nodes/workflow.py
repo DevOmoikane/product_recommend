@@ -7,11 +7,12 @@ from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
 from ..log import *
 from ..config import load_config, Config
+from .node_definition import auto_detect_merge_strategy, is_list_type, is_dict_type, is_set_type, is_tuple_type
 
 
 def create_instance_from_string(full_path: str):
@@ -375,13 +376,100 @@ class WorkflowExecutor:
 
         return sorted_nodes
 
+    @debug_return
+    def _get_node_input_types(self, node: WorkflowNode) -> Dict[str, Any]:
+        node_type = create_instance_from_string(node.type)
+        if node_type is None:
+            return {}
+        if not hasattr(node_type, "_node_meta"):
+            return {}
+        meta = node_type._node_meta
+        input_types = {}
+        for inp in meta.get("inputs", []):
+            input_types[inp["id"]] = inp.get("type")
+        return input_types
+
+    @debug_return
+    def _get_node_input_merge(self, node: WorkflowNode) -> Dict[str, str]:
+        node_type = create_instance_from_string(node.type)
+        if node_type is None:
+            return {}
+        if not hasattr(node_type, "_node_meta"):
+            return {}
+        return node_type._node_meta.get("input_merge", {})
+
+    @debug_return
+    def _merge_values(self, values: List[Any], strategy: str) -> Any:
+        if not values:
+            return None
+        if len(values) == 1:
+            return values[0]
+        
+        if strategy == "update":
+            result = {}
+            for v in values:
+                if isinstance(v, dict):
+                    result.update(v)
+            return result
+        
+        if strategy == "append":
+            result = []
+            for v in values:
+                if isinstance(v, list):
+                    result.extend(v)
+                else:
+                    result.append(v)
+            return result
+        
+        if strategy == "extend":
+            result = []
+            for v in values:
+                if isinstance(v, (list, tuple)):
+                    result.extend(v)
+                else:
+                    result.append(v)
+            return tuple(result)
+        
+        if strategy == "union":
+            result = set()
+            for v in values:
+                if isinstance(v, (set, frozenset)):
+                    result |= v
+                elif isinstance(v, (list, tuple)):
+                    result.update(v)
+                else:
+                    result.add(v)
+            return result
+        
+        if strategy == "first":
+            return values[0]
+        
+        if strategy == "last":
+            return values[-1]
+        
+        return values[-1]
+
+    @debug_return
     def _resolve_inputs(self, node: WorkflowNode, results: Dict[str, Any]) -> Dict[str, Any]:
-        inputs = {}
+        input_connections = defaultdict(list)
 
         for conn in self.workflow.connections:
-            if conn.to_node == node.id:
-                if conn.from_node in results:
-                    inputs[conn.to_input] = results[conn.from_node].get(conn.from_output)
+            if conn.to_node == node.id and conn.from_node in results:
+                value = results[conn.from_node].get(conn.from_output)
+                if value is not None:
+                    input_connections[conn.to_input].append(value)
+
+        input_types = self._get_node_input_types(node)
+        input_merge = self._get_node_input_merge(node)
+
+        inputs = {}
+        for input_name, values in input_connections.items():
+            if len(values) > 1:
+                expected_type = input_types.get(input_name)
+                strategy = input_merge.get(input_name) or auto_detect_merge_strategy(expected_type)
+                inputs[input_name] = self._merge_values(values, strategy)
+            else:
+                inputs[input_name] = values[0] if values else None
 
         for field_name, field_value in node.fields.items():
             if field_name not in inputs:

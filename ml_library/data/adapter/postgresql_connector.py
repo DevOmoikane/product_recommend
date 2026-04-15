@@ -24,6 +24,10 @@ class PostgreSQLConnector(AbstractDataConnector):
     @classmethod
     def get_data(cls, uri: str, queries: Optional[Dict[str, str]] = None) -> Dict[str, pd.DataFrame]:
         logobject(queries, "get_data => queries = ")
+        if queries is not None and isinstance(queries, dict):
+            for key, value in (queries or {}).items():
+                loginfo(f"Query for {key}: {value}")
+        loginfo(f"queries = {queries}")
         # connector = cls(uri, queries)
         # data = {
         #     "interactions": connector.get_interactions(),

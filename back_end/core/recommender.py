@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import Any, Optional, Dict, List, Tuple
 from scipy.sparse import csr_matrix
-from app.model_base import ModelBase
+from back_end.core.model_base import ModelBase
 from ml_library.utils.log import *
 from implicit.recommender_base import RecommenderBase
 

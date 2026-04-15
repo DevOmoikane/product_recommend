@@ -43,7 +43,7 @@ from ml_library.utils.log import *
 
 
 if TYPE_CHECKING:
-    from app.model_base import ModelBase
+    from back_end.core.model_base import ModelBase
 
 
 class ModelRegistry:

@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 from typing import Any, Optional, Dict, Tuple
-from app.model_base import ModelBase
+from back_end.core.model_base import ModelBase
 from ml_library.utils.config import load_config
-from app.model_base import ModelRegistry
+from back_end.core.model_base import ModelRegistry
 
 
 class Trainer(ModelBase):

@@ -25,3 +25,6 @@ uvicorn
 pyyaml
 joblib
 singleton-decorator
+pytest
+pytest-asyncio
+httpx
