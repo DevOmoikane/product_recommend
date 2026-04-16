@@ -37,7 +37,7 @@ export const stopWorkflow = async (executionId) => {
 };
 
 export const connectToExecution = (executionId, onMessage, onError, onClose) => {
-  const ws = new WebSocket(`${WS_BASE_URL}/ws/workflow/${executionId}`);
+  const ws = new WebSocket(`${WS_BASE_URL}/api/workflow/${executionId}`);
 
   ws.onopen = () => {
     console.log('WebSocket connected for execution:', executionId);

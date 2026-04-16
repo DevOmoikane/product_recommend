@@ -40,6 +40,6 @@ def debug_return(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        logger.info(f"Function {func.__name__} returned: {pprint.pformat(result)}")
+        logger.info(f"Function {func.__name__} called with: {pprint.pformat(args)} and: {pprint.pformat(kwargs)} returned: {pprint.pformat(result)}")
         return result
     return wrapper

@@ -23,5 +23,8 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requ
 # Install opencode
 RUN curl -fsSL https://opencode.ai/install | bash
 
+# Install gemini
+RUN npm install -g @google/gemini-cli
+
 EXPOSE 8000
 EXPOSE 5173

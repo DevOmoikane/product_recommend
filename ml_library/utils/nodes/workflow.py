@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from pprint import pformat
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
@@ -454,30 +455,44 @@ class WorkflowExecutor:
         input_connections = defaultdict(list)
 
         for conn in self.workflow.connections:
+            loginfo(f"Processing connection: {conn.from_node} -> {conn.to_node} with output {conn.from_output} to input {conn.to_input}")
+            loginfo(f"Node id = {node.id}, results = {pformat(results)}")
             if conn.to_node == node.id and conn.from_node in results:
                 value = results[conn.from_node].get(conn.from_output)
                 if value is not None:
                     input_connections[conn.to_input].append(value)
 
+        logobject(input_connections, "Input Connections")
+
         input_types = self._get_node_input_types(node)
         input_merge = self._get_node_input_merge(node)
 
+        logobject(input_merge, "Input Merge => ")
+
         inputs = {}
-        for input_name, values in input_connections.items():
-            if len(values) > 1:
-                expected_type = input_types.get(input_name)
-                strategy = input_merge.get(input_name) or auto_detect_merge_strategy(expected_type)
-                inputs[input_name] = self._merge_values(values, strategy)
-            else:
-                inputs[input_name] = values[0] if values else None
 
         for field_name, field_value in node.fields.items():
             if field_name not in inputs:
                 inputs[field_name] = field_value
+        logobject(inputs, "Inputs (2) => ")
 
         for key, value in self.workflow.initial_data.items():
             if key not in inputs:
                 inputs[key] = value
+        logobject(inputs, "Inputs (3) => ")
+
+        for input_name, values in input_connections.items():
+            loginfo(f"Processing input: {input_name} with {len(values)} values => {pformat(values)}")
+            if len(values) >= 1:
+                expected_types = input_types.get(input_name)
+                strategy = input_merge.get(input_name)
+                if not strategy:
+                    strategy = auto_detect_merge_strategy(expected_types)
+                logobject(strategy, f"Strategy for {input_name} => ")
+                inputs[input_name] = self._merge_values(values, strategy)
+            elif len(values) == 0:
+                inputs[input_name] = values[0] if values else None
+        logobject(inputs, "Inputs (1) => ")
 
         return inputs
 

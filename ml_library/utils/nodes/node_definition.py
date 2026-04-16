@@ -18,27 +18,27 @@ import pandas as pd
 
 
 COMMON_TYPE_COLOR_MAP = {
-    int: "#FF5733",
-    float: "#33FF57",
-    str: "#5733FF",
-    bool: "#FF33A1",
-    list: "#FFA133",
-    List: "#FFA133",
-    dict: "#33A1FF",
-    Dict: "#33A1FF",
-    Any: "#FFFFFF",
-    tuple: "#A1FF33",
-    Tuple: "#A1FF33",
-    Union: "#A133FF",
-    Optional: "#FF33FF",
-    Callable: "#33FFA1",
-    pd.DataFrame: "#FFA1FF",
-    pd.Series: "#A1A1A1",
+    type(int): "#FF5733",
+    type(float): "#33FF57",
+    type(str): "#5733FF",
+    type(bool): "#FF33A1",
+    type(list): "#FFA133",
+    type(List): "#FFA133",
+    type(dict): "#33A1FF",
+    type(Dict): "#33A1FF",
+    type(Any): "#FFFFFF",
+    type(tuple): "#A1FF33",
+    type(Tuple): "#A1FF33",
+    type(Union): "#A133FF",
+    type(Optional): "#FF33FF",
+    type(Callable): "#33FFA1",
+    type(pd.DataFrame): "#FFA1FF",
+    type(pd.Series): "#A1A1A1",
     type(None): "#FFFFFF",
 }
 
 def type_to_fieldtype(t) -> str:
-    if t in (int, float, str, bool, list, dict, tuple):
+    if t in (int, float, str, bool, list, dict, tuple, List, Dict, Tuple):
         return "textarea"
     return None
 
@@ -134,15 +134,18 @@ def is_tuple_type(t):
 
 MERGE_STRATEGIES = {"update", "append", "extend", "union", "first", "last"}
 
+@debug_return
 def auto_detect_merge_strategy(t) -> str:
-    if is_dict_type(t):
-        return "update"
-    if is_list_type(t):
-        return "append"
-    if is_tuple_type(t):
-        return "extend"
-    if is_set_type(t):
-        return "union"
+    #TODO: verify this implementation, t is an array of types, so we need a way to tell if any of the types is one of the expected (maybe sorting them in some way, TBD)
+    for st in t:
+        if is_dict_type(st):
+            return "update"
+        elif is_list_type(st):
+            return "append"
+        elif is_tuple_type(st):
+            return "extend"
+        elif is_set_type(st):
+            return "union"
     return "last"
 
 def get_connection_count(t):
@@ -161,7 +164,17 @@ class NodeInputMode(Enum):
     REQUIRED = 1
     HIDDEN = 2
 
-def node(friendly_name: str | None = None, color: str = "", description: str = "", icon: str = "", category: str = "", function: str = "", begin_node: bool = False, end_node: bool = False, input_merge: Dict[str, str] = None):
+def node(
+        friendly_name: str | None = None,
+        color: str = "",
+        description: str = "",
+        icon: str = "",
+        category: str = "",
+        function: str = "",
+        begin_node: bool = False,
+        end_node: bool = False,
+        input_merge: Dict[str, str] = None
+):
     def decorator(cls):
         global NodeRegistry
         meta = {

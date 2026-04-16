@@ -46,3 +46,19 @@ class PairNode:
     @classmethod
     def get_value(cls, key: str, value: str) -> Dict[str, str]:
         return {key: value}
+
+
+@node(
+    friendly_name="Dictionary Node",
+    description="A node that holds a key-value pair.",
+    category="Basic",
+    icon="fa fa-hashtag",
+    color="#33C1FF",
+    begin_node=False,
+    input_merge={}
+)
+class DictNode:
+    @node_method(output_label="dict")
+    @classmethod
+    def value(cls, the_dict: Dict[str, Any]) -> Dict[str, Any]:
+        return the_dict
