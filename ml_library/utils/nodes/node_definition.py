@@ -134,10 +134,36 @@ def is_tuple_type(t):
 
 MERGE_STRATEGIES = {"update", "append", "extend", "union", "first", "last"}
 
+TYPE_NAME_TO_CLASS = {
+    "dict": dict,
+    "list": list,
+    "tuple": tuple,
+    "set": set,
+    "str": str,
+    "int": int,
+    "float": float,
+    "bool": bool,
+    "Dict": dict,
+    "List": list,
+    "Tuple": tuple,
+    "Set": set,
+    "String": str,
+    "Integer": int,
+    "Float": float,
+    "Boolean": bool,
+}
+
+def _resolve_type(st) -> Any:
+    if isinstance(st, str):
+        return TYPE_NAME_TO_CLASS.get(st, st)
+    return st
+
 @debug_return
 def auto_detect_merge_strategy(t) -> str:
-    #TODO: verify this implementation, t is an array of types, so we need a way to tell if any of the types is one of the expected (maybe sorting them in some way, TBD)
+    if not t:
+        return "last"
     for st in t:
+        st = _resolve_type(st)
         if is_dict_type(st):
             return "update"
         elif is_list_type(st):
@@ -147,6 +173,31 @@ def auto_detect_merge_strategy(t) -> str:
         elif is_set_type(st):
             return "union"
     return "last"
+
+def get_compatible_merge_strategies(source_types: List[str], target_types: List[str]) -> Set[str]:
+    source_classes = [_resolve_type(t) for t in source_types]
+    target_classes = [_resolve_type(t) for t in target_types]
+    
+    compatible = set()
+    
+    for src in source_classes:
+        for tgt in target_classes:
+            if src is None or tgt is None:
+                continue
+            if src == tgt:
+                compatible.add("first")
+                compatible.add("last")
+            
+            if tgt in (dict, Dict) and src in (dict, Dict):
+                compatible.add("update")
+            if tgt in (list, List):
+                compatible.add("append")
+            if tgt in (tuple, Tuple):
+                compatible.add("extend")
+            if tgt in (set, SetType):
+                compatible.add("union")
+    
+    return compatible if compatible else {"first", "last"}
 
 def get_connection_count(t):
     if get_origin(t) is Union or get_origin(t) is UnionType or get_origin(t) is Optional:
@@ -275,7 +326,7 @@ def node_method(func=None, output_label: str = "", description: str = ""):
         args = []
         if sig.parameters:
             for param in sig.parameters.values():
-                if param.name in ('self', 'cls'):
+                if param.name in ('self', 'cls') or param.name.startswith('_'):
                     continue
                 argument = {
                     "id": param.name,

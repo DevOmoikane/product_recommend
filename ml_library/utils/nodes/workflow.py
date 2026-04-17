@@ -13,7 +13,19 @@ from dataclasses import dataclass, field
 
 from ..log import *
 from ..config import load_config, Config
-from .node_definition import auto_detect_merge_strategy, is_list_type, is_dict_type, is_set_type, is_tuple_type
+from .node_definition import auto_detect_merge_strategy, is_list_type, is_dict_type, is_set_type, is_tuple_type, get_compatible_merge_strategies
+
+
+def debug_broadcast_wrapper(execution_id: str, node_id: str, callback: Callable[[Dict], None]):
+    def _broadcast_debug(message: str, data: Any):
+        callback({
+            "type": "debug_log",
+            "execution_id": execution_id,
+            "node_id": node_id,
+            "message": message,
+            "data": str(data)[:500] if data is not None else None
+        })
+    return _broadcast_debug
 
 
 def create_instance_from_string(full_path: str):
@@ -311,6 +323,16 @@ class WorkflowExecutor:
                 errors.append(f"Connection: Source node '{conn.from_node}' not found")
             if conn.to_node not in node_map:
                 errors.append(f"Connection: Target node '{conn.to_node}' not found")
+            else:
+                source_types = self._get_node_output_types(conn.from_node, conn.from_output)
+                target_input_types = self._get_node_input_types(node_map[conn.to_node])
+                target_types = target_input_types.get(conn.to_input, [])
+                if not self._types_compatible(source_types, target_types):
+                    errors.append(
+                        f"Connection: Incompatible types - "
+                        f"{conn.from_node}.{conn.from_output} ({source_types}) -> "
+                        f"{conn.to_node}.{conn.to_input} ({target_types})"
+                    )
 
         cycle_errors = self._check_circular_dependencies()
         errors.extend(cycle_errors)
@@ -400,6 +422,39 @@ class WorkflowExecutor:
         return node_type._node_meta.get("input_merge", {})
 
     @debug_return
+    def _get_node_output_types(self, node_id: str, output_name: str) -> List[str]:
+        node_map = {node.id: node for node in self.workflow.nodes}
+        node = node_map.get(node_id)
+        if node is None:
+            return []
+        node_type = create_instance_from_string(node.type)
+        if node_type is None:
+            return []
+        if not hasattr(node_type, "_node_meta"):
+            return []
+        meta = node_type._node_meta
+        for out in meta.get("outputs", []):
+            if out["id"] == output_name:
+                return out.get("type", [])
+        return []
+
+    def _types_compatible(self, source_types: List[str], target_types: List[str]) -> bool:
+        if not source_types or not target_types:
+            return True
+        compatible_strategies = get_compatible_merge_strategies(source_types, target_types)
+        return len(compatible_strategies) > 0
+
+    def _get_output_id_for_function(self, node: WorkflowNode, func_name: str) -> str:
+        node_type = create_instance_from_string(node.type)
+        if node_type is None or not hasattr(node_type, "_node_meta"):
+            return func_name
+        meta = node_type._node_meta
+        for out in meta.get("outputs", []):
+            if out.get("function") == func_name or out.get("id") == func_name:
+                return out.get("id", func_name)
+        return func_name
+
+    @debug_return
     def _merge_values(self, values: List[Any], strategy: str) -> Any:
         if not values:
             return None
@@ -451,7 +506,7 @@ class WorkflowExecutor:
         return values[-1]
 
     @debug_return
-    def _resolve_inputs(self, node: WorkflowNode, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_inputs(self, node: WorkflowNode, results: Dict[str, Any], on_status: Optional[Callable[[Dict], None]] = None) -> Dict[str, Any]:
         input_connections = defaultdict(list)
 
         for conn in self.workflow.connections:
@@ -493,6 +548,9 @@ class WorkflowExecutor:
             elif len(values) == 0:
                 inputs[input_name] = values[0] if values else None
         logobject(inputs, "Inputs (1) => ")
+
+        if on_status is not None:
+            inputs["_broadcast"] = debug_broadcast_wrapper(self.execution_id, node.id, on_status)
 
         return inputs
 
@@ -540,25 +598,27 @@ class WorkflowExecutor:
 
             try:
                 cls = create_instance_from_string(node.type)
-                inputs = self._resolve_inputs(node, results)
+                inputs = self._resolve_inputs(node, results, on_status)
+                method_inputs = {k: v for k, v in inputs.items() if not k.startswith("_")}
 
                 method = getattr(cls, node.processing_function)
-                output = method(**inputs)
+                output = method(**method_inputs)
 
-                results[node.id] = {node.processing_function: output}
+                output_id = self._get_output_id_for_function(node, node.processing_function)
+                results[node.id] = {output_id: output}
 
                 self._execution_store.update_node_status(
                     self.execution_id,
                     node.id,
                     NodeStatus.COMPLETED,
-                    {node.processing_function: output}
+                    {output_id: output}
                 )
 
                 on_status({
                     "type": "node_completed",
                     "execution_id": self.execution_id,
                     "node_id": node.id,
-                    "result": {node.processing_function: str(output)[:200]}
+                    "result": {output_id: str(output)[:200]}
                 })
 
             except Exception as e:

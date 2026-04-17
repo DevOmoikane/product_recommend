@@ -55,7 +55,7 @@ class PairNode:
     icon="fa fa-hashtag",
     color="#33C1FF",
     begin_node=False,
-    input_merge={}
+    input_merge={"the_dict": "update"}
 )
 class DictNode:
     @node_method(output_label="dict")

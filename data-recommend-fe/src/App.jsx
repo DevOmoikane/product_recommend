@@ -211,6 +211,10 @@ function Flow() {
         }
         break;
         
+      case 'debug_log':
+        addLog(`[DEBUG] ${message.node_id}: ${message.message || ''} ${message.data || ''}`, 'info');
+        break;
+        
       default:
         addLog(`Unknown message: ${JSON.stringify(message)}`, 'info');
     }
@@ -383,6 +387,11 @@ function Flow() {
 
       const sourceTypes = Array.isArray(sourceHandle.type) ? sourceHandle.type : [sourceHandle.type];
       const targetTypes = Array.isArray(targetHandle.type) ? targetHandle.type : [targetHandle.type];
+
+      // Any type accepts any connection
+      if (targetTypes.includes('Any')) {
+        return true;
+      }
 
       const isCompatible = sourceTypes.some(sourceType => {
         const compatibleTypes = COMPATIBLE_CONNECTIONS[sourceType] || [];
